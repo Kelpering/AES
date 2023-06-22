@@ -36,8 +36,29 @@ InvShiftRow();      |   Current
 InvMixColumn();     |   x
 */
 
-#include <iostream>
-#include <iomanip>
+
+
+// Dev Log:
+/*
+    Runs bad, currently at KeyExpansion.
+    Plan:
+    - Finish program, test with online AES-128.
+    - Add block padding & block slicing (idk the real name) to divide longer data into 128 bit blocks.
+    - Refactor code to be not absolute hot garbage.
+    - Make RSA implementation later. (Combine with this program)
+    Unlikely:
+    - Implement optimizations.
+    - Learn how AES actually works
+    - New program: AES-256
+    - Make class similar to others
+    - Add s-box calculations            (Small file size spectrum)
+    - Add all hard coded calculations   (Large file size spectrum)
+    - Assembly optimizations?? CPU optimizations??  (This is not happening)
+
+*/
+
+#include <iostream>     // Used for printing, Can probably be removed in final versions (If console commands added).
+#include <iomanip>      // Used for debug state, prints Blocks.
 
 using namespace std;
 
