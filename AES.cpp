@@ -50,7 +50,7 @@ InvMixColumn();     |   x
     - Implement optimizations.
     - Learn how AES actually works
     - New program: AES-256
-    - Make class similar to others
+    - Make class similar to other one I saw
     - Add s-box calculations            (Small file size spectrum)
     - Add all hard coded calculations   (Large file size spectrum)
     - Assembly optimizations?? CPU optimizations??  (This is not happening)
@@ -123,7 +123,7 @@ int main()
 {
     unsigned char Block[4][4] = //Read left to right, top to bottom. Input as if used from input
     {
-        {0x19, 0xa0, 0x9a, 0xe9}, 
+        {0x19, 0xa0, 0x9a, 0xe9}, // I hate that evil exists in this world - mom
         {0x3d, 0xf4 ,0xc6, 0xf8}, 
         {0xe3, 0xe2, 0x8d, 0x48}, 
         {0xbe, 0x2b, 0x2a, 0x08}
@@ -132,12 +132,12 @@ int main()
 
     unsigned char Key[16]    = 
     {
-        0x00, 0x10, 0x20, 0x30,
-        0x40, 0x50, 0x60, 0x70,
-        0x80, 0x90, 0xA0, 0xB0,
-        0xC0, 0xD0, 0xE0, 0xF0
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00
     };
-    unsigned char KeySchedule[44][16];
+    unsigned char KeySchedule[11][16];
 
     //PrintState(Key);
     ExpandKey(Key, KeySchedule);
@@ -201,7 +201,7 @@ int main()
     return 0;
 }
 
-void Subword(unsigned char Word[4])
+void SubWord(unsigned char Word[4])
 {
     for (int i = 0; i < 4; i++)
     {
@@ -225,19 +225,121 @@ void RotWord(unsigned char Word[4])
     }
 }
 
-void ExpandKey(unsigned char Key[16], unsigned char KeySchedule[44][16])
+    // Copied because I have brain damage.
+    // Remake later, all this func does is 2^i within the Galios Field.
+unsigned char rcon(unsigned char in) 
 {
-    unsigned char temp[4];
-    temp[0] = Key[0];
-    temp[1] = Key[1];
-    temp[2] = Key[2];
-    temp[3] = Key[3];
-    // No invert needed, this is one way.
-    cout << hex << (int) temp[0] << " " << (int) temp[1] << " "  << (int) temp[2] << " " << (int) temp[3] << endl;
-    Subword(temp);
-    cout << hex << (int) temp[0] << " " << (int) temp[1] << " "  << (int) temp[2] << " " << (int) temp[3] << endl;
-    RotWord(temp);
-    cout << hex << (int) temp[0] << " " << (int) temp[1] << " "  << (int) temp[2] << " " << (int) temp[3] << endl;
+        unsigned char c=1;
+        if(in == 0)  
+                return 0; 
+        while(in != 1) {
+		unsigned char b;
+		b = c & 0x80;
+		c <<= 1;
+		if(b == 0x80) {
+			c ^= 0x1b;
+		}
+                in--;
+        }
+        return c;
+}
+
+void ExpandKey(unsigned char Key[16], unsigned char KeySchedule[11][16])        // TEST NEEDED, WORKING(?)
+{
+    unsigned char TempSchedule[176];
+    int c;
+
+    for (c=0; c < 16; c++)                  // 0-15 bytes in TempSchedule
+    {
+        TempSchedule[c] = Key[c];
+    }
+
+    for (int i = 1; i < 11; i++)            // Skip 0, 1-11 in TempSchedule
+    {
+        // First 4 bytes
+        unsigned char Temp[4];
+        for (int j = 0; j < 4; j++)         // 0-3 in new key.
+        {
+            Temp[j] = TempSchedule[c-4+j];  // Set Temp to the last 4 bytes
+        }
+        RotWord(Temp);                      // Rotate Word
+        SubWord(Temp);                      // Sub all bytes in Word
+        Temp[0] ^= rcon(i);                 // Xor the first byte with 2^i (rcon) within galios field
+
+        for (int j = 0; j < 4; j++)
+        {
+            TempSchedule[c] = Temp[j] ^ TempSchedule[c-16];     // The next 4 bytes is set to (Temp) XOR (Current Schedule minus 16)
+            c++;
+        }
+
+        // Last 12 bytes
+        for (int j = 0; j < 3; j++)         // repeats 3 times. 0-2
+        {
+            for (int j = 0; j < 4; j++)         // 0-3 in new key.
+            {
+                Temp[j] = TempSchedule[c-4];  // Set Temp to the last 4 bytes
+                TempSchedule[c] = Temp[j] ^ TempSchedule[c-16];     // The next 4 bytes is set to (Temp) XOR (Current Schedule minus 16)
+                //cout << hex << (int) Temp[j] << " ^ " << (int) TempSchedule[c-16] << endl;
+                c++;
+                
+            }
+
+        }
+
+
+    }
+    
+    // // There are like 60 off by one errors here.
+    // unsigned char TempSchedule[176];
+    // int c;
+    // int j;
+    // // Assigns first Key within KeySchedule
+    // for (c = 0; c < 15; c++)
+    // {
+    //     TempSchedule[c] = Key[c];
+    // }
+    // // Handles the rest of the Schedule
+    // for (int i = 1; i < 11; i++)
+    // {
+    //     // First 4
+    //     unsigned char Temp[4];
+    //     for (j = 0; j < 3; j++)
+    //     {
+    //         Temp[j] = TempSchedule[c-4+j];
+    //     }
+    //     RotWord(Temp);
+    //     SubWord(Temp);
+    //     Temp[0] ^= rcon(i);
+    //     for (j = 0; j < 3; j++)
+    //     {
+    //         TempSchedule[c] = Temp[j] ^ TempSchedule[c-16+j];
+    //         c++;
+    //     }
+    //     c++;
+
+    //     for (int k = 0; k < 2; k++)
+    //     {
+    //         for (j = 0; j < 4; j++)
+    //         {
+    //             Temp[j] = TempSchedule[c-4+j];
+    //         }
+    //         for (j = 0; j < 4; j++)
+    //         {
+    //             TempSchedule[c] = Temp[j] ^ TempSchedule[c-19];
+    //             cout << hex << (int) Temp[j] << " ^ " << (int) TempSchedule[c-19] << endl;
+    //             c++;
+    //         }
+    //     }
+    
+    // }
+    for (int i = 0; i < 176; i++)       // Transform from print function to a TempSchedule -> KeySchedule function, Clean comments.
+    {
+        if (i % 16 == 0 && i != 0)
+        {
+            cout << endl;
+        }
+       cout << "[0x" << setw(2) << setfill('0') << hex << (int) TempSchedule[i] << "] ";    // Fancy print function, maybe steal for function or macro.
+    }
 }
 
 // Modifies State to ( State[i] XOR Key[i] )
@@ -268,8 +370,8 @@ void SubByte(unsigned char State[4][4])
     {
         for (int j = 0; j < 4; j++)
         {
-            unsigned char x = State[i][j] & 0b00001111;    // First 4
-            unsigned char y= State[i][j] >> 4;               // Last  4
+            unsigned char x = State[i][j] & 0b00001111;      // First 4    
+            unsigned char y= State[i][j] >> 4;               // Last  4 
             State[i][j] = sbox[y][x];
             //cout << hex << (int) State[i][j] << endl;
             //Split hex state into 2, 4bit nums or 2 individual hex values.
