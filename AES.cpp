@@ -24,20 +24,6 @@
 C D E F 
 */
 
-//Checklist:
-/*
-AddRoundKey();      |   Done 
-SubByte();          |   Done
-ShiftRow();         |   Done
-MixColumn();        |   Done
-
-InvSubByte();       |   Done
-InvShiftRow();      |   Current
-InvMixColumn();     |   x
-*/
-
-
-
 // Dev Log:
 /*
     Runs bad, currently at KeyExpansion.
@@ -109,95 +95,44 @@ void SubByte(unsigned char State[4][4]);
 void ShiftRow(unsigned char State[4][4]);
 void MixColumn(unsigned char State[4][4]);
 
-void EncryptBlock(unsigned char Block[4][4], unsigned char Output[16]);
+void EncryptBlock(unsigned char In[16], unsigned char Key[16], unsigned char Out[16]);
 
 void InvSubByte(unsigned char State[4][4]);
 void InvShiftRow(unsigned char State[4][4]);
 void InvMixColumn(unsigned char State[4][4]);
 
-void DecryptBlock(unsigned char Block[4][4]);
+void DecryptBlock(unsigned char In[16], unsigned char Key[16], unsigned char Out[16]);
 
 void PrintState(unsigned char State[4][4]);
+void PrintKey(unsigned char Key[16]);
 
 int main()
 {
-    unsigned char Block[4][4] = //Read left to right, top to bottom. Input as if used from input
+    // In is regular left to right, top to bottom read. Convert to block in EncryptBlock()
+    unsigned char In[16] =      
     {
-        {0x19, 0xa0, 0x9a, 0xe9}, // I hate that evil exists in this world - mom
-        {0x3d, 0xf4 ,0xc6, 0xf8}, 
-        {0xe3, 0xe2, 0x8d, 0x48}, 
-        {0xbe, 0x2b, 0x2a, 0x08}
+        0x32, 0x43, 0xf6, 0xa8,
+        0x88, 0x5a, 0x30, 0x8d,
+        0x31, 0x31, 0x98, 0xa2,
+        0xe0, 0x37, 0x07, 0x34
     };
-    // Convert Plaintext to Block
 
+    // Key is in left to right, top to bottom format with workarounds added for each Key Func()
     unsigned char Key[16]    = 
     {
-        0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00
+        0x2b, 0x7e, 0x15, 0x16,
+        0x28, 0xae, 0xd2, 0xa6,
+        0xab, 0xf7, 0x15, 0x88,
+        0x09, 0xcf, 0x4f, 0x3c
     };
-    unsigned char KeySchedule[11][16];
 
-    //PrintState(Key);
-    ExpandKey(Key, KeySchedule);
-    //PrintState(Key);
-
-    // unsigned char Output[16];
-    // cout << "Original: ";
-    // PrintState(Block);
-    // SubByte(Block);
-    // cout << "SubByte: ";
-    // PrintState(Block);
-    // ShiftRow(Block);
-    // cout << "ShiftRow: ";
-    // PrintState(Block);
-    // MixColumn(Block);
-    // cout << "MixColumn: ";
-    // PrintState(Block);
-    // AddRoundKey(Block, Key);
-    // cout << "RoundKey: ";
-    // PrintState(Block);
-
-
-
-
-    //AddRoundKey(Block, Key);
-    //ShiftRow(Block);
-    //MixColumn(Block);
-    // PrintState(Block);
-
-    // SubByte(Block);
-    // PrintState(Block);
-    // InvSubByte(Block);
-
-    // PrintState(Block);
-
-    // AddRoundKey(Block, Key);
+    unsigned char Out[16];
     
-    // for (int round = 0; round < 9; round++) //Is number of rounds right?
-    // {
-    //     SubByte(Block);
-    //     ShiftRow(Block);
-    //     MixColumn(Block);
-    //     AddRoundKey(Block, Key);
-    // }
+    // * Successful run, tests needed, next step is implementing EncryptBlock() function.
+    // TODO: Learn how to use "Better Comments" Extension
+    // TODO: Remove unecessary comments
 
-    // SubByte(Block);
-    // ShiftRow(Block);
-    // AddRoundKey(Block, Key);
-
-    //Writes Block to Output.
-    // int count = 0;
-    // for (int i = 0; i < 4; i++)
-    // {
-    //     for (int j = 0; j < 4; j++)
-    //     {
-    //         Output[count] = Block[i][j];
-    //         count++;
-    //     }
-    // }
-
+    EncryptBlock(In, Key, Out);
     return 0;
 }
 
@@ -244,116 +179,69 @@ unsigned char rcon(unsigned char in)
         return c;
 }
 
-void ExpandKey(unsigned char Key[16], unsigned char KeySchedule[11][16])        // TEST NEEDED, WORKING(?)
+void ExpandKey(unsigned char Key[16], unsigned char KeySchedule[11][16])
 {
     unsigned char TempSchedule[176];
+    unsigned char Temp[4];
+    int i = 1;
     int c;
 
-    for (c=0; c < 16; c++)                  // 0-15 bytes in TempSchedule
-    {
+    for (c = 0; c < 16; c++)                  // 0-15 bytes in TempSchedule
+    {        
         TempSchedule[c] = Key[c];
     }
 
-    for (int i = 1; i < 11; i++)            // Skip 0, 1-11 in TempSchedule
+    while (c < 176)
     {
-        // First 4 bytes
-        unsigned char Temp[4];
-        for (int j = 0; j < 4; j++)         // 0-3 in new key.
-        {
-            Temp[j] = TempSchedule[c-4+j];  // Set Temp to the last 4 bytes
-        }
-        RotWord(Temp);                      // Rotate Word
-        SubWord(Temp);                      // Sub all bytes in Word
-        Temp[0] ^= rcon(i);                 // Xor the first byte with 2^i (rcon) within galios field
-
+        // Assign Temp to last 4 COLUMN bytes
         for (int j = 0; j < 4; j++)
         {
-            TempSchedule[c] = Temp[j] ^ TempSchedule[c-16];     // The next 4 bytes is set to (Temp) XOR (Current Schedule minus 16)
+            Temp[j] = TempSchedule[c-4+j];
+        }
+        //cout << endl;
+
+        // Modify Temp if new key
+        if ( c % 16 == 0)                       // Every 0th-4th byte in every key (0-15 bytes)
+        {
+            RotWord(Temp);
+            SubWord(Temp);
+            Temp[0] ^= rcon(i);
+            i++;
+        }
+
+        // Take previous word (Temp) and xor with word 4 words ago (4x4 = 16 bytes ago)
+        // Every start of a key (c%16==0) uses previous byte with RotWord, SubWord, and rcon
+
+        // Assign new word to Schedule.
+        for (int j = 0; j < 4; j++)
+        {
+            TempSchedule[c] = Temp[j] ^ TempSchedule[c-16];
             c++;
         }
-
-        // Last 12 bytes
-        for (int j = 0; j < 3; j++)         // repeats 3 times. 0-2
-        {
-            for (int j = 0; j < 4; j++)         // 0-3 in new key.
-            {
-                Temp[j] = TempSchedule[c-4];  // Set Temp to the last 4 bytes
-                TempSchedule[c] = Temp[j] ^ TempSchedule[c-16];     // The next 4 bytes is set to (Temp) XOR (Current Schedule minus 16)
-                //cout << hex << (int) Temp[j] << " ^ " << (int) TempSchedule[c-16] << endl;
-                c++;
-                
-            }
-
-        }
-
-
     }
-    
-    // // There are like 60 off by one errors here.
-    // unsigned char TempSchedule[176];
-    // int c;
-    // int j;
-    // // Assigns first Key within KeySchedule
-    // for (c = 0; c < 15; c++)
-    // {
-    //     TempSchedule[c] = Key[c];
-    // }
-    // // Handles the rest of the Schedule
-    // for (int i = 1; i < 11; i++)
-    // {
-    //     // First 4
-    //     unsigned char Temp[4];
-    //     for (j = 0; j < 3; j++)
-    //     {
-    //         Temp[j] = TempSchedule[c-4+j];
-    //     }
-    //     RotWord(Temp);
-    //     SubWord(Temp);
-    //     Temp[0] ^= rcon(i);
-    //     for (j = 0; j < 3; j++)
-    //     {
-    //         TempSchedule[c] = Temp[j] ^ TempSchedule[c-16+j];
-    //         c++;
-    //     }
-    //     c++;
 
-    //     for (int k = 0; k < 2; k++)
-    //     {
-    //         for (j = 0; j < 4; j++)
-    //         {
-    //             Temp[j] = TempSchedule[c-4+j];
-    //         }
-    //         for (j = 0; j < 4; j++)
-    //         {
-    //             TempSchedule[c] = Temp[j] ^ TempSchedule[c-19];
-    //             cout << hex << (int) Temp[j] << " ^ " << (int) TempSchedule[c-19] << endl;
-    //             c++;
-    //         }
-    //     }
-    
-    // }
-    for (int i = 0; i < 176; i++)       // Transform from print function to a TempSchedule -> KeySchedule function, Clean comments.
+    int count = 0;
+    for (int i = 0; i < 11; i++)
     {
-        if (i % 16 == 0 && i != 0)
+        for (int j = 0; j < 16; j++)
         {
-            cout << endl;
+            KeySchedule[i][j] = TempSchedule[count];
+            count++;
         }
-       cout << "[0x" << setw(2) << setfill('0') << hex << (int) TempSchedule[i] << "] ";    // Fancy print function, maybe steal for function or macro.
     }
+
 }
 
 // Modifies State to ( State[i] XOR Key[i] )
 void AddRoundKey(unsigned char State[4][4], unsigned char Key[16]) 
 {
-    //cout << "Adding Round Key: " << endl; // Debug Log
     unsigned int count = 0;
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)
         {
-            State[i][j] = State[i][j] ^ Key[count];
+            State[i][j] = State[i][j] ^ Key[i+(j*4)];
             count++;
-            //cout << hex << i << ": " << (int) State[i][j] << endl; // Debug Log
         }
     }
     return;
@@ -373,11 +261,8 @@ void SubByte(unsigned char State[4][4])
             unsigned char x = State[i][j] & 0b00001111;      // First 4    
             unsigned char y= State[i][j] >> 4;               // Last  4 
             State[i][j] = sbox[y][x];
-            //cout << hex << (int) State[i][j] << endl;
             //Split hex state into 2, 4bit nums or 2 individual hex values.
-
         }
-        //cout << endl;
     }
     return;
 }
@@ -392,11 +277,8 @@ void InvSubByte(unsigned char State[4][4])
             unsigned char x = State[i][j] & 0b00001111;    // First 4
             unsigned char y= State[i][j] >> 4;               // Last  4
             State[i][j] = inv_sbox[y][x];
-            //cout << hex << (int) State[i][j] << endl;
             //Split hex state into 2, 4bit nums or 2 individual hex values.
-
         }
-        //cout << endl;
     }
     return;
 }
@@ -425,17 +307,26 @@ void ShiftRow(unsigned char State[4][4])
         for (int j = 0; j < 4; j++)
         {
             State[i][j] = temp[i][j];
-            //cout << hex << (int) State[i][j] << endl;
         }
-        //cout << endl;
         
     }
     return;
 }
 
-void InvShiftRow(unsigned char State[4][4])
+void InvShiftRow(unsigned char State[4][4])     // Requires testing
 {
-
+    unsigned char temp[4][4];
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            temp[i][(i+j)%4] = State[i][j];
+        }
+        for (int j = 0; j < 4; j++)
+        {
+            State[i][j] = temp[i][j];
+        }
+    }
     return;
 }
 
@@ -474,22 +365,57 @@ void MixColumn(unsigned char State[4][4])
 
 void InvMixColumn(unsigned char State[4][4])
 {
-
+    // This is a massive pain to implement
     return;
 }
 
-void EncryptBlock(unsigned char Block[4][4], unsigned char Output[16])
+void EncryptBlock(unsigned char In[16], unsigned char Key[16], unsigned char Out[16])
 {
+    unsigned char Block[4][4] =
+    {
+        {In[0], In[4], In[8], In[12]},
+        {In[1], In[5], In[9], In[13]},
+        {In[2], In[6], In[10], In[14]},
+        {In[3], In[7], In[11], In[15]}
+    };
 
+    // Expands key to fill all rounds
+    unsigned char KeySchedule[11][16];
+    ExpandKey(Key, KeySchedule);
+
+    cout << "Starting State: " << endl;
+    PrintState(Block);
+
+    AddRoundKey(Block, KeySchedule[0]);
+    cout << "First Add Key: " << endl;
+    PrintState(Block);
+
+    for (int rounds = 1; rounds < 10; rounds++) // Does all rounds expect the last
+    {
+        SubByte(Block);
+        ShiftRow(Block);
+        MixColumn(Block);
+        AddRoundKey(Block, KeySchedule[rounds]); // KeySchedule is broken, all the rest are verified.
+        cout << "Round: " << rounds << endl;
+        PrintState(Block);
+    }
+
+    // Last round, excludes MixColumns.
+    SubByte(Block);
+    ShiftRow(Block);
+    AddRoundKey(Block, KeySchedule[10]);
+
+    PrintState(Block);
+    return;
 }
 
-void DecryptBlock(unsigned char Block[4][4])
+void DecryptBlock(unsigned char In[16], unsigned char Key[16], unsigned char Out[16])
 {
-
+    //TODO: This
 }
 
 
-// Debug Function
+// Debug Functions
 void PrintState(unsigned char State[4][4])
 {
     cout << "Current State: " << endl;
@@ -502,5 +428,32 @@ void PrintState(unsigned char State[4][4])
         cout << endl;
     }
     cout << endl;
+    return;
+}
+
+void PrintKey(unsigned char Key[16])
+{
+    unsigned char Temp[4][4];
+    unsigned char count = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            Temp[j][i] = Key[count];
+            count++;
+        }
+        
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        cout << endl;
+        for (int j = 0; j < 4; j++)
+        {
+            cout << hex << "[0x" << setw(2) << setfill('0') << (int) Temp[i][j] << "] ";
+        }
+        
+    }
+    
     return;
 }
