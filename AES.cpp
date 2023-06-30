@@ -1,50 +1,31 @@
 // This program will use the AES-128 standard
 
-// Word is 4 bytes
-// Addition is usually XOR operations.
 // Nb is number of Columns, standard here is 4
 // Nk is number of words in key, 128bit standard here is 4
 // Nr is number of rounds, 128bit standard here is 10
 
-// Circle with + is XOR
-// Circle with x is Multiplication of 2 polynomials.
-// . is finite field multiplication
-
-/* IN & OUT ARRAY STRUCT
-0 4 8 C 
-1 5 9 D 
-2 6 A E 
-3 7 B F 
-*/
-
-/* STATE ARRAY STRUCT
-0 1 2 3 
-4 5 6 7 
-8 9 A B 
-C D E F 
-*/
-
 // Dev Log:
 /*
-    Runs bad, currently at KeyExpansion.
+    Runs bad, currently on InvMixColumn
     Plan:
     - Finish program, test with online AES-128.
-    - Add block padding & block slicing (idk the real name) to divide longer data into 128 bit blocks.
+    - Add block padding & ECB to divide longer data into 128 bit blocks.
     - Refactor code to be not absolute hot garbage.
+    - Add CBC to make true AES implementation
     - Make RSA implementation later. (Combine with this program)
     Unlikely:
     - Implement optimizations.
     - Learn how AES actually works
     - New program: AES-256
-    - Make class similar to other one I saw
+    - Make class similar to other one I saw (github project)
     - Add s-box calculations            (Small file size spectrum)
     - Add all hard coded calculations   (Large file size spectrum)
     - Assembly optimizations?? CPU optimizations??  (This is not happening)
 
 */
 
-#include <iostream>     // Used for printing, Can probably be removed in final versions (If console commands added).
-#include <iomanip>      // Used for debug state, prints Blocks.
+#include <iostream>     // Used for printing.
+#include <iomanip>      // Used for debug state, prints hex.
 
 using namespace std;
 
@@ -128,12 +109,44 @@ int main()
 
     unsigned char Out[16];
     
-    // * Successful run, tests needed, next step is implementing EncryptBlock() function.
-    // TODO: Learn how to use "Better Comments" Extension
-    // TODO: Remove unecessary comments
+    // TODO: Remove unecessary comments, Add more documentation comments
 
-    EncryptBlock(In, Key, Out);
+    // TODO: Unit test, All signs point to Encrypt & Decrypt functions being successful.
+    // TODO: After unit test, implement padding and ECB
+    // TODO: After ECB, Implement CBC
+    // TODO: After unit testing CBC, Revise code thoroughly
+    // TODO: After revise, implement AES-256
+
+    PrintKey(In);
+    cout << endl;
+
+    EncryptBlock(In, Key, Out);     // Encrypts block
+
+    DecryptBlock(Out, Key, Out);    // Decrypts block
+    PrintKey(Out);
     return 0;
+}
+
+unsigned char GMul(unsigned char a, unsigned char b)
+{
+    unsigned char p = 0, i = 0, hbs = 0;
+
+    for (i = 0; i < 8; i++)
+    {
+        if (b & 1)
+        {
+            p ^= a;
+        }
+
+        hbs = a & 0x80;
+        a <<= 1;
+        if (hbs)
+        {
+            a ^= 0x1b;
+        }
+        b >>= 1;
+    }
+    return (p);
 }
 
 void SubWord(unsigned char Word[4])
@@ -160,7 +173,6 @@ void RotWord(unsigned char Word[4])
     }
 }
 
-    // Copied because I have brain damage.
     // Remake later, all this func does is 2^i within the Galios Field.
 unsigned char rcon(unsigned char in) 
 {
@@ -287,15 +299,10 @@ void ShiftRow(unsigned char State[4][4])
 {
     //Shift by row, 0 shift left, 1 shift left, 2 shift left, 3 shift left
     /* replace bits with bytes in practice.
-    1 0 0 1
-    0 0 1 0 
-    1 1 0 1 
-    0 1 0 1 
-
-    1 0 0 1
-    0 1 0 0
-    0 1 1 1
-    1 0 1 0
+    1 0 0 1  =    1 0 0 1
+    0 0 1 0  >    0 1 0 0
+    1 1 0 1  >>   0 1 1 1
+    0 1 0 1  >>>  1 0 1 0
     */
     unsigned char temp[4][4];
     for (int i = 0; i < 4; i++)
@@ -332,32 +339,23 @@ void InvShiftRow(unsigned char State[4][4])     // Requires testing
 
 void MixColumn(unsigned char State[4][4])
 {
-    //matrix[x][y]
-    // This one is just getting copy pasted, I have no clue how this works.
 
-    
-/* The array 'a' is simply a copy of the input array 'r'
- * The array 'b' is each element of the array 'a' multiplied by 2
- * in Rijndael's Galois field
- * a[n] ^ b[n] is element n multiplied by 3 in Rijndael's Galois field */ 
+    unsigned char a[4][4];
+
     for (int i = 0; i < 4; i++)
     {
-        unsigned char a[4];
-        unsigned char b[4];
-        unsigned char c;
-        unsigned char h;
-        for (c = 0; c < 4; c++) 
+        for (int j = 0; j < 4; j++)
         {
-            a[c] = State[c][i];
-            /* h is 0xff if the high bit of r[c] is set, 0 otherwise */
-            h = (State[c][i] >> 7) & 1; /* arithmetic right shift, thus shifting in either zeros or ones */
-            b[c] = State[c][i] << 1; /* implicitly removes high bit because b[c] is an 8-bit char, so we xor by 0x1b and not 0x11b in the next line */
-            b[c] ^= h * 0x1B; /* Rijndael's Galois field */
+            a[i][j] = State[i][j];
         }
-    State[0][i] = b[0] ^ a[3] ^ a[2] ^ b[1] ^ a[1]; /* 2 * a0 + a3 + a2 + 3 * a1 */
-    State[1][i] = b[1] ^ a[0] ^ a[3] ^ b[2] ^ a[2]; /* 2 * a1 + a0 + a3 + 3 * a2 */
-    State[2][i] = b[2] ^ a[1] ^ a[0] ^ b[3] ^ a[3]; /* 2 * a2 + a1 + a0 + 3 * a3 */
-    State[3][i] = b[3] ^ a[2] ^ a[1] ^ b[0] ^ a[0]; /* 2 * a3 + a2 + a1 + 3 * a0 */
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        State[0][i] = GMul(a[0][i], 2) ^ a[3][i] ^ a[2][i] ^ GMul(a[1][i], 3);
+        State[1][i] = GMul(a[1][i], 2) ^ a[0][i] ^ a[3][i] ^ GMul(a[2][i], 3);
+        State[2][i] = GMul(a[2][i], 2) ^ a[1][i] ^ a[0][i] ^ GMul(a[3][i], 3);
+        State[3][i] = GMul(a[3][i], 2) ^ a[2][i] ^ a[1][i] ^ GMul(a[0][i], 3);
     }
     
     return;
@@ -365,7 +363,23 @@ void MixColumn(unsigned char State[4][4])
 
 void InvMixColumn(unsigned char State[4][4])
 {
-    // This is a massive pain to implement
+    unsigned char a[4][4];
+
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            a[i][j] = State[i][j];
+        }
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        State[0][i] = GMul(a[0][i], 0x0e) ^ GMul(a[3][i], 0x09) ^ GMul(a[2][i], 0x0d) ^ GMul(a[1][i], 0x0b);
+        State[1][i] = GMul(a[1][i], 0x0e) ^ GMul(a[0][i], 0x09) ^ GMul(a[3][i], 0x0d) ^ GMul(a[2][i], 0x0b);
+        State[2][i] = GMul(a[2][i], 0x0e) ^ GMul(a[1][i], 0x09) ^ GMul(a[0][i], 0x0d) ^ GMul(a[3][i], 0x0b);
+        State[3][i] = GMul(a[3][i], 0x0e) ^ GMul(a[2][i], 0x09) ^ GMul(a[1][i], 0x0d) ^ GMul(a[0][i], 0x0b);
+    }
     return;
 }
 
@@ -383,12 +397,12 @@ void EncryptBlock(unsigned char In[16], unsigned char Key[16], unsigned char Out
     unsigned char KeySchedule[11][16];
     ExpandKey(Key, KeySchedule);
 
-    cout << "Starting State: " << endl;
-    PrintState(Block);
+    //cout << "Starting State: " << endl;
+    //PrintState(Block);
 
     AddRoundKey(Block, KeySchedule[0]);
-    cout << "First Add Key: " << endl;
-    PrintState(Block);
+    //cout << "First Add Key: " << endl;
+    //PrintState(Block);
 
     for (int rounds = 1; rounds < 10; rounds++) // Does all rounds expect the last
     {
@@ -396,8 +410,8 @@ void EncryptBlock(unsigned char In[16], unsigned char Key[16], unsigned char Out
         ShiftRow(Block);
         MixColumn(Block);
         AddRoundKey(Block, KeySchedule[rounds]); // KeySchedule is broken, all the rest are verified.
-        cout << "Round: " << rounds << endl;
-        PrintState(Block);
+        //cout << "Round: " << rounds << endl;
+        //PrintState(Block);
     }
 
     // Last round, excludes MixColumns.
@@ -405,20 +419,73 @@ void EncryptBlock(unsigned char In[16], unsigned char Key[16], unsigned char Out
     ShiftRow(Block);
     AddRoundKey(Block, KeySchedule[10]);
 
-    PrintState(Block);
+    //PrintState(Block);
+    int count = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            Out[count] = Block[j][i];
+            count++;
+        }
+    }
     return;
 }
 
 void DecryptBlock(unsigned char In[16], unsigned char Key[16], unsigned char Out[16])
 {
-    //TODO: This
+    unsigned char Block[4][4] =
+    {
+        {In[0], In[4], In[8], In[12]},
+        {In[1], In[5], In[9], In[13]},
+        {In[2], In[6], In[10], In[14]},
+        {In[3], In[7], In[11], In[15]}
+    };
+
+    // Expands key to fill all rounds
+    unsigned char KeySchedule[11][16];
+    ExpandKey(Key, KeySchedule);
+
+    //cout << "Starting State: " << endl;
+    //PrintState(Block);
+
+    AddRoundKey(Block, KeySchedule[10]);
+    //cout << "First Add Key: " << endl;
+    //PrintState(Block);
+
+    for (int rounds = 9; rounds > 0; rounds--) // Does all rounds except the last
+    {
+        InvShiftRow(Block);
+        InvSubByte(Block);
+        AddRoundKey(Block, KeySchedule[rounds]);
+        InvMixColumn(Block);
+
+        //cout << "Round: " << rounds << endl;
+        //PrintState(Block);
+    }
+
+    // Last round, excludes MixColumns.
+    InvShiftRow(Block);
+    InvSubByte(Block);
+    AddRoundKey(Block, KeySchedule[0]);
+
+    //PrintState(Block);
+    int count = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            Out[count] = Block[j][i];
+            count++;
+        }
+    }
+    return;
 }
 
 
 // Debug Functions
 void PrintState(unsigned char State[4][4])
 {
-    cout << "Current State: " << endl;
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)
