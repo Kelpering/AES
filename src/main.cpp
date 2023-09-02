@@ -1,8 +1,11 @@
 #include <iostream>
+#include <iomanip>
 #include "AES.cpp"
+
 using namespace std;
 
-void PrintArr(uint8_t arr[16]);
+void PrintArr(uint8_t *arr);
+void PrintBlock(uint8_t *arr);
 
 int main()
 {
@@ -23,16 +26,32 @@ int main()
         0x09, 0xcf, 0x4f, 0x3c
     };
 
+    cout << "Plaintext : ";
     PrintArr(plaintext);
+    cout << "Key       : ";
+    PrintArr(key);
+    cout << endl;
 
-    uint8_t* ciphertext = Aes.Encrypt(plaintext, key);
+    Aes.Encrypt(plaintext, key);
+    cout << "Ciphertext: ";
+    PrintArr(plaintext);
+    cout << endl;
 
-    PrintArr(ciphertext);
-    delete[] ciphertext;
-
+    Aes.Decrypt(plaintext, key);
+    cout << "Decrypted : ";
+    PrintArr(plaintext);
 }
 
 void PrintArr(uint8_t *arr)
+{
+    for(int i = 0; i < 16; i++)
+    {
+        cout << "0x" << setfill('0') << setw(2) << hex << (int) arr[i] << " ";
+    }
+    cout << endl;
+}
+
+void PrintBlock(uint8_t *arr)
 {
     for (int i = 0; i < 16; i++)
     {
@@ -40,8 +59,7 @@ void PrintArr(uint8_t *arr)
         {
             cout << endl;
         }
-        cout << hex <<(int) arr[i] << " ";
-        
+        cout << "0x" << setfill('0') << setw(2) << hex << (int) arr[i] << " ";
     }
     cout << endl;
 }
