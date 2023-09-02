@@ -50,7 +50,6 @@ class AES
         uint8_t* Encrypt(uint8_t plaintext[16], uint8_t key[16]);
         uint8_t* Decrypt(uint8_t ciphertext[16], uint8_t key[16]);
 
-        
 };
 
 
@@ -110,7 +109,6 @@ uint8_t* AES::Encrypt(uint8_t plaintext[16], uint8_t key[16])
     return State;
 }
 
-
 /**
  * Decrypts a block of 16 bytes with a key of 16 bytes using the AES protocol. 
  * 
@@ -124,6 +122,7 @@ uint8_t* AES::Decrypt(uint8_t ciphertext[16], uint8_t key[16])
 
     return 0;
 }
+
 
 /**
  * Rotates an 8 bit number x left by shift. 
@@ -230,7 +229,6 @@ void AES::SubBytes(uint8_t State[16])
     }
     return;
 }
-
 
 /**
  * Shifts rows of State a by an offset dependant on the row.
