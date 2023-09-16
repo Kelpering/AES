@@ -4,8 +4,6 @@
 
 /**
  * A class that handles AES-128 functions. Does not include padding, only accepts 16 bytes per run.
- * 
- * 
 */
 class AES
 {

@@ -1,111 +1,80 @@
-// #include "Encrypt.h"
+#include "Encrypt.h"
 
-// //? To make this easier, I will use vectors to encrypt and decrypt as that will allow dynamic sizing without a new array
-// //? Makes the whole process generally easier if you use the vector correctly
-// //? I believe they will still work with the AES.h Function
+/**
+ * Pads a Vector to a multiple of 16 bytes, uses the PKCS#7 method.
+ * 
+ * @param *vector Pointer to the vector to pad.
+*/
+void Encrypt::PadVector(std::vector<uint8_t>* vector)
+{
+    std::size_t size = vector->size();
 
-// //! Whole Encrypt rewrite is required
+    uint8_t PadByte = 16 - (vector->size() % 16);
 
+    for (std::size_t i = size; i < (size + PadByte); i++)
+    {
+        vector->push_back(PadByte);
+    }
+    vector->shrink_to_fit();
 
+    return;
+}
 
-// /**
-//  * Takes a byte array plaintext and the size of the byte array. 
-//  * Returns a new byte array with an AES compliant size with PCKS#7 padding.
-//  * 
-//  *! @warning Returns a dynamically allocated array, needs to be handled by user.
-//  *! @warning The size of the dynamically allocated array is size+(16 - size % 16).
-//  * 
-//  * @param plaintext Array to be padded
-//  * @param size Size of plaintext
-//  * 
-//  * @returns An allocated array to be used with AES modes.
-// */
-// uint8_t* Encrypt::PadArr(uint8_t* plaintext, uint64_t size)
-// {
-//     uint8_t PadByte = 16 - (size % 16);
+/**
+ * Unpads a Vector using the last byte to know how long the vector previously was. Uses PKCS#7.
+ * 
+ * @param *vector Pointer to the vector to unpad.
+*/
+void Encrypt::InvPadVector(std::vector<uint8_t>* vector)
+{
+    uint8_t PadByte = *(vector->end() - 1);
+    vector->resize(vector->size() - PadByte);
 
-//     uint8_t* NewArray = new uint8_t[size+PadByte];
-//     //* Assign plaintext bytes to NewArray
-//     for(uint64_t i = 0; i < size; i++)
-//     {
-//         NewArray[i] = plaintext[i];
-//     }
-//     //* All new slots are filled with PadByte
-//     for(uint64_t i = size; i < size+PadByte; i++)
-//     {
-//         NewArray[i] = PadByte;
-//     }
+    vector->shrink_to_fit();
 
-//     return NewArray;
-// }
+    return;
+}
 
-// /**
-//  * Unpads the array to return ciphertext back to pure plaintext.
-//  * 
-//  *! @warning Returns a dynamically allocated array, needs to be handled by user.
-//  *! @warning The size of the dynamically allocated array is size-(The final byte in the array). Ex: size = 16, arr[15] = 3, newsize = 13
-//  *
-//  * @param ciphertext Unencrypted byte array ciphertext to unpad.
-//  * @param size Size of ciphertext byte array.
-//  * 
-//  * @returns An allocated array that contains the pure plaintext.
-// */
-// uint8_t* Encrypt::InvPadArr(uint8_t* ciphertext, uint64_t size)
-// {
-//     //* Last element in ciphertext
-//     uint8_t PadByte = ciphertext[size-1];
+/**
+ * Encrypts a block any size using the AES-128 protocol using a key.
+ * 
+ *! @warning Overwrites plaintext.
+ * 
+ * @param *plaintext Pointer to a vector containing the plaintext to encrypt.
+ * @param *key Pointer to a 16 byte array containing the key to encrypt with.
+*/
+void Encrypt::ECBEncryptNew(std::vector<uint8_t>* plaintext, uint8_t* key)
+{
+    //* Pads vector to be a multiple of 16.
+    //* Last byte is the number of bytes to cut in Decrypt.
+    PadVector(plaintext);
 
-//     uint8_t* NewArray = new uint8_t[size-PadByte];
-//     //* Assign plaintext bytes to NewArray
-//     for(uint64_t i = 0; i < size-PadByte; i++)
-//     {
-//         NewArray[i] = ciphertext[i];
-//     }
-//     //* All new slots are filled with PadByte
+    AES Aes;
+    for (int i = 0; i < plaintext->size(); i+=16)
+    {
+        //* The address of the (i)th element in plaintext.
+        Aes.Encrypt(&(*plaintext)[i], key);
+    }
+}
 
-//     return NewArray;
-// }
+/**
+ * Decrypts a block of any size with a key of 16 bytes using the AES protocol. 
+ * 
+ *! @warning Overwrites ciphertext.
+ * 
+ * @param *ciphertext Pointer to a vector containing the ciphertext to decrypt.
+ * @param *key Pointer to a 16 byte array containing the key to decrypt with.
+*/
+void Encrypt::ECBDecryptNew(std::vector<uint8_t>* ciphertext, uint8_t* key)
+{
+    AES Aes;
+    for (int i = 0; i < ciphertext->size(); i+=16)
+    {
+        //* The address of the (i)th element in ciphertext.
+        Aes.Decrypt(&(*ciphertext)[i], key);
+    }
 
-// /**
-//  * Encrypts plaintext, padding is applied automatically. Mode: Electronic Code Book (ECB)
-//  * 
-//  * @param plaintext A byte array of plaintext to encrypt.
-//  * @param key A byte array for the key, 16 bytes.
-//  * 
-//  * @returns A dynamically allocated array containing the ciphertext.
-// */
-// uint8_t* Encrypt::ECBEncrypt(uint8_t* plaintext, uint64_t size, uint8_t* key)
-// {
-//     AES Aes;
-//     //* Creates array Padded with a NewSize that is divisible by 16
-//     //! Padded is a dynamically allocated array
-//     uint8_t* Padded = PadArr(plaintext, size);
-//     uint32_t NewSize = size + (16-(size%16));
-
-//     for(uint64_t i = 0; i < size; i+=16)
-//     {
-//         //* Should overwrite padded to contain encrypted values, 16 bytes at a time
-//         Aes.Encrypt((Padded+i), key);
-//     }
-
-//     return Padded;
-// }
-
-// uint8_t* Encrypt::ECBDecrypt(uint8_t* ciphertext, uint64_t size, uint8_t* key)
-// {
-//     AES Aes;
-    
-//     for(uint64_t i = 0; i < size; i+=16)
-//     {
-//         //* Should overwrite padded to contain encrypted values, 16 bytes at a time
-//         Aes.Decrypt((ciphertext+i), key);
-//     }
-
-//     //* Creates array Padded with a NewSize that is divisible by 16
-//     //! Padded is a dynamically allocated array
-//     uint8_t* UnPadded = InvPadArr(ciphertext, size);
-//     uint32_t NewSize = size - (16-(size%16));
-
-//     //! Unknown length of UnPadded
-//     return UnPadded;
-// }
+    //* Unencrypted text is still non-functional with PadByte at the end
+    //* This cuts PadByte, returning the ciphertext to its previous status.
+    InvPadVector(ciphertext);
+}
