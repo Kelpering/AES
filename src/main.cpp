@@ -17,47 +17,42 @@ void PrintBlock(vector<uint8_t> vector);
 
 int main()
 {
-    vector<uint8_t> plaintext;
-    //! Test values:
-    // vector<uint8_t> plaintext = 
-    // {
-    //     0x32, 0x43, 0xf6, 0xa8,
-    //     0x88, 0x5a, 0x30, 0x8d,
-    //     0x31, 0x31, 0x98, 0xa2,
-    //     0xe0, 0x37, 0x07, 0x34,
-    //     0x23
-    // };
-    // uint8_t key[16] = 
-    // {
-    //     0x2b, 0x7e, 0x15, 0x16,
-    //     0x28, 0xae, 0xd2, 0xa6,
-    //     0xab, 0xf7, 0x15, 0x88,
-    //     0x09, 0xcf, 0x4f, 0x3c
-    // };
+    //? All modes use vectors, Encrypt can convert base64 strings to vectors.
+    //? Should allow for file readings.
 
-    uint8_t key[16] = 
-    {
-        0x2b, 0x7e, 0x15, 0x16,
-        0x28, 0xae, 0xd2, 0xa6,
-        0xab, 0xf7, 0x15, 0x88,
-        0x09, 0xcf, 0x4f, 0x3c
-    };
+    // vector<uint8_t> plaintext;
+    // CinVector(&plaintext);
 
-    CinVector(&plaintext);
+    // Encrypt Enc;
+    // vector<uint8_t> Key = Enc.RandomKey();
+    // cout << "Key (Array): "; PrintArr(Key);
+    // cout << "Key (Base64): " << Enc.Base64Encode(&Key[0], Key.size()) << endl << endl;
 
-    //* Vector<> plaintext now contains plaintext
-    Encrypt Enc;
+    // Enc.ECBEncrypt(&plaintext, &Key[0]);
+    // cout << "ciphertext (Array): "; PrintArr(plaintext);
+    // cout << "ciphertext (Base64): " << Enc.Base64Encode(&plaintext[0], plaintext.size()) << endl;
 
-    PrintString(plaintext);
-    Enc.ECBEncryptNew(&plaintext, key);
-    //* Vector<> plaintext now contains ciphertext
+    // Enc.ECBDecrypt(&plaintext, &Key[0]);
+    // PrintString(plaintext);
 
-    PrintArr(plaintext);
-    Enc.ECBDecryptNew(&plaintext, key);
-    //* Vector<> plaintext now contains plaintext
 
-    PrintString(plaintext);
+    // Encrypt Enc;
 
+    // string Ciphertext64;
+    // cout << "Ciphertext (Base64): ";
+    // cin >> Ciphertext64;
+
+    // string Key64;
+    // cout << "Key (Base64): ";
+    // cin >> Key64;
+
+    // vector<uint8_t> Ciphertext = Enc.Base64Decode(Ciphertext64);
+    // vector<uint8_t> Key = Enc.Base64Decode(Key64);
+    // Enc.ECBDecrypt(&Ciphertext, &Key[0]);
+    // string test = Enc.VectorString(Ciphertext);
+    // cout << test << endl;
+
+    //! File test, encrypt file time.
 }
 
 void CinVector(vector<uint8_t>* vector)
