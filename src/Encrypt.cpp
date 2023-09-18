@@ -1,5 +1,4 @@
 #include "Encrypt.h"
-#include <iostream>
 
 Encrypt::Encrypt()
 {

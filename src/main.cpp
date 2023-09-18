@@ -1,6 +1,8 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <fstream>
+#include <filesystem>
 #include "Encrypt.h"
 
 using namespace std;
@@ -19,38 +21,50 @@ int main()
 {
     //? All modes use vectors, Encrypt can convert base64 strings to vectors.
     //? Should allow for file readings.
+    //! This works
 
-    // vector<uint8_t> plaintext;
-    // CinVector(&plaintext);
+    string path = "./test.txt";
 
-    // Encrypt Enc;
-    // vector<uint8_t> Key = Enc.RandomKey();
-    // cout << "Key (Array): "; PrintArr(Key);
-    // cout << "Key (Base64): " << Enc.Base64Encode(&Key[0], Key.size()) << endl << endl;
+    ifstream File(path, ios::binary);
+    vector<uint8_t> buffer(istreambuf_iterator<char>(File), {});
+    File.close();
 
-    // Enc.ECBEncrypt(&plaintext, &Key[0]);
-    // cout << "ciphertext (Array): "; PrintArr(plaintext);
-    // cout << "ciphertext (Base64): " << Enc.Base64Encode(&plaintext[0], plaintext.size()) << endl;
+    remove("test.txt.AES");
+    ofstream FileWrite(path + ".AES", ios::out | ios::binary | ios::app);
+    FileWrite.write((char *) &buffer[0], buffer.size());
+    FileWrite.close();
 
-    // Enc.ECBDecrypt(&plaintext, &Key[0]);
-    // PrintString(plaintext);
+    //* vector<uint8_t> plaintext;
+    //* CinVector(&plaintext);
+    
+    //* Encrypt Enc;
+    //* vector<uint8_t> Key = Enc.RandomKey();
+    //* cout << "Key (Array): "; PrintArr(Key);
+    //* cout << "Key (Base64): " << Enc.Base64Encode(&Key[0], Key.size()) << endl << endl;
+
+    //* Enc.ECBEncrypt(&plaintext, &Key[0]);
+    //* cout << "ciphertext (Array): "; PrintArr(plaintext);
+    //* cout << "ciphertext (Base64): " << Enc.Base64Encode(&plaintext[0], plaintext.size()) << endl;
+
+    //* Enc.ECBDecrypt(&plaintext, &Key[0]);
+    //* PrintString(plaintext);
 
 
-    // Encrypt Enc;
+    //* Encrypt Enc;
 
-    // string Ciphertext64;
-    // cout << "Ciphertext (Base64): ";
-    // cin >> Ciphertext64;
+    //* string Ciphertext64;
+    //* cout << "Ciphertext (Base64): ";
+    //* cin >> Ciphertext64;
 
-    // string Key64;
-    // cout << "Key (Base64): ";
-    // cin >> Key64;
+    //* string Key64;
+    //* cout << "Key (Base64): ";
+    //* cin >> Key64;
 
-    // vector<uint8_t> Ciphertext = Enc.Base64Decode(Ciphertext64);
-    // vector<uint8_t> Key = Enc.Base64Decode(Key64);
-    // Enc.ECBDecrypt(&Ciphertext, &Key[0]);
-    // string test = Enc.VectorString(Ciphertext);
-    // cout << test << endl;
+    //* vector<uint8_t> Ciphertext = Enc.Base64Decode(Ciphertext64);
+    //* vector<uint8_t> Key = Enc.Base64Decode(Key64);
+    //* Enc.ECBDecrypt(&Ciphertext, &Key[0]);
+    //* string test = Enc.VectorString(Ciphertext);
+    //* cout << test << endl;
 
     //! File test, encrypt file time.
 }
