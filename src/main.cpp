@@ -22,17 +22,47 @@ int main()
     //? All modes use vectors, Encrypt can convert base64 strings to vectors.
     //? Should allow for file readings.
     //! This works
-
+    
     string path = "./test.txt";
 
     ifstream File(path, ios::binary);
     vector<uint8_t> buffer(istreambuf_iterator<char>(File), {});
     File.close();
-
-    remove("test.txt.AES");
-    ofstream FileWrite(path + ".AES", ios::out | ios::binary | ios::app);
+    // buffer<> contains the file in binary format
+    
+    Encrypt Enc;
+    vector<uint8_t> Key = Enc.RandomKey();
+    Enc.ECBEncrypt(&buffer, &Key[0]);
+    // buffer<> now contains ciphertext(buffer<>)
+    
+    string NewPath = path + ".AES";
+    remove(&NewPath[0]);
+    ofstream FileWrite(NewPath, ios::out | ios::binary | ios::app);
     FileWrite.write((char *) &buffer[0], buffer.size());
     FileWrite.close();
+    // New file "(path).AES" contains encrypted binary
+    
+    string FinalPath = path + ".DEC";
+    ifstream NewRead(NewPath, ios::binary);
+    vector<uint8_t> NewBuffer(istreambuf_iterator<char>(NewRead), {});
+    NewRead.close();
+
+    Enc.ECBDecrypt(&NewBuffer, &Key[0]);
+    
+    PrintString(NewBuffer); 
+
+
+
+    // string path = "./test.txt";
+
+    // ifstream File(path, ios::binary);
+    // vector<uint8_t> buffer(istreambuf_iterator<char>(File), {});
+    // File.close();
+
+    // remove("test.txt.AES");
+    // ofstream FileWrite(path + ".AES", ios::out | ios::binary | ios::app);
+    // FileWrite.write((char *) &buffer[0], buffer.size());
+    // FileWrite.close();
 
     //* vector<uint8_t> plaintext;
     //* CinVector(&plaintext);
