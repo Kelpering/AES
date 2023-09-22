@@ -3,6 +3,7 @@
 Encrypt::Encrypt()
 {
     srand(time(0));
+    return;
 }
 
 /**
@@ -35,6 +36,7 @@ void Encrypt::InvPadVector(std::vector<uint8_t>* vector)
     uint8_t PadByte = *(vector->end() - 1);
     vector->resize(vector->size() - PadByte);
     vector->shrink_to_fit();
+
     return;
 }
 
@@ -57,6 +59,8 @@ void Encrypt::ECBEncrypt(std::vector<uint8_t>* plaintext, uint8_t* key)
         //* The address of the (i)th element in plaintext.
         AES::Encrypt(&(*plaintext)[i], key);
     }
+
+    return;
 }
 
 /**
@@ -78,6 +82,50 @@ void Encrypt::ECBDecrypt(std::vector<uint8_t>* ciphertext, uint8_t* key)
     //* Unencrypted text is still non-functional with PadByte at the end
     //* This cuts PadByte, returning the ciphertext to its previous status.
     InvPadVector(ciphertext);
+
+    return;
+}
+
+void Encrypt::FileEncryptECB(std::string path, uint8_t* key)
+{
+    //* Read file Path to buffer<>
+    std::ifstream File(path, std::ios::binary);
+    std::vector<uint8_t> buffer(std::istreambuf_iterator<char>(File), {});
+    File.close();
+
+    //* Encrypt buffer<>
+    ECBEncrypt(&buffer, key);
+
+    //* Write Encrypted file to {path}.AES
+    std::ofstream FileWrite(path + ".AES", std::ios::binary);
+    FileWrite.write((char *) &buffer[0], buffer.size());
+    FileWrite.close();
+
+    return;
+}
+
+void Encrypt::FileDecryptECB(std::string path, uint8_t* key)
+{
+    if (!(path.find(".AES")))
+    {
+        return;
+    }
+
+    //* Read file Path to buffer<>
+    std::ifstream File(path, std::ios::binary);
+    std::vector<uint8_t> buffer(std::istreambuf_iterator<char>(File), {});
+    File.close();
+
+    //* Decrypt buffer<>
+    ECBDecrypt(&buffer, key);
+
+    //* Write Decrypted file to {path} - .AES. Ex: test.txt.AES -> test.txt
+    path[path.length() - 4] = '\0';
+    std::ofstream FileWrite(path, std::ios::binary);
+    FileWrite.write((char *) &buffer[0], buffer.size());
+    FileWrite.close();
+    
+    return;
 }
 
 static inline bool is_base64(uint8_t c) {

@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdlib>
 #include <time.h>
+#include <fstream>
 #include "AES.h"
 
 /**
@@ -28,6 +29,8 @@ class Encrypt : private AES
         Encrypt();
         void ECBEncrypt(std::vector<uint8_t>* plaintext, uint8_t* key);
         void ECBDecrypt(std::vector<uint8_t>* ciphertext, uint8_t* key);
+        void FileEncryptECB(std::string path, uint8_t* key);
+        void FileDecryptECB(std::string path, uint8_t* key);
         std::string VectorString(std::vector<uint8_t> const vector);
         std::vector<uint8_t> RandomKey();
         
