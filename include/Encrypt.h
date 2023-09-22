@@ -9,7 +9,7 @@
 /**
  * A helper class that implements modes, conversions, and other useful functions for dealing with AES-128 encryption.
 */
-class Encrypt
+class Encrypt : private AES
 {
     // // PADDING (PCKS#7) (pad with the number of padding bytes)
     // // ECB

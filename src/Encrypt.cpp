@@ -52,11 +52,10 @@ void Encrypt::ECBEncrypt(std::vector<uint8_t>* plaintext, uint8_t* key)
     //* Last byte is the number of bytes to cut in Decrypt.
     PadVector(plaintext);
 
-    AES Aes;
     for (size_t i = 0; i < plaintext->size(); i+=16)
     {
         //* The address of the (i)th element in plaintext.
-        Aes.Encrypt(&(*plaintext)[i], key);
+        AES::Encrypt(&(*plaintext)[i], key);
     }
 }
 
@@ -70,11 +69,10 @@ void Encrypt::ECBEncrypt(std::vector<uint8_t>* plaintext, uint8_t* key)
 */
 void Encrypt::ECBDecrypt(std::vector<uint8_t>* ciphertext, uint8_t* key)
 {
-    AES Aes;
     for (size_t i = 0; i < ciphertext->size(); i+=16)
     {
         //* The address of the (i)th element in ciphertext.
-        Aes.Decrypt(&(*ciphertext)[i], key);
+        AES::Decrypt(&(*ciphertext)[i], key);
     }
 
     //* Unencrypted text is still non-functional with PadByte at the end
