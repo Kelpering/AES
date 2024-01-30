@@ -6,6 +6,8 @@
 // So, we will make the function change the X size array itself.
 //* Any "pre-generated" arrays will have initializer functions to fill them.
 
+static uint8_t SBox[256];
+
 void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 {
     //! NOTE, ALL CURRENT STEPS ARE FOR 128-BIT. DOUBLE CHECK AND CORRECT FOR 256-BIT.
@@ -40,6 +42,23 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 
     //? Fill Data (reverse) sideways
     //* Reverse State init, but use regular Plaintext[i] = State[j] declaration, 16 of em.
+
+    Plaintext[0] = State[0];
+    Plaintext[1] = State[4];
+    Plaintext[2] = State[8];
+    Plaintext[3] = State[12];
+    Plaintext[4] = State[1];
+    Plaintext[5] = State[5];
+    Plaintext[6] = State[9];
+    Plaintext[7] = State[13];
+    Plaintext[8] = State[2];
+    Plaintext[9] = State[6];
+    Plaintext[10] = State[10];
+    Plaintext[11] = State[14];
+    Plaintext[12] = State[3];
+    Plaintext[13] = State[7];
+    Plaintext[14] = State[11];
+    Plaintext[15] = State[15];
     
     return;
 }
@@ -84,3 +103,65 @@ uint32_t AESKeyGen()
 // Static functions will be necessary, along with defines
 // Eventually, we will need encryption methods (ECB, CBC), which will go into another file (along with more cryptography such as md5)
 // I am NOT making AES sidechannel secure, not happening.
+
+static void KeyExpansion(uint8_t* Key)
+{
+
+    return;
+}
+
+static void XorState(uint8_t* State, const uint8_t* Key)
+{
+    for (int i = 0; i < 16; i++)
+    {
+        // The key is seen sideways for some reason
+        // Might be useful in the future for KeyExpand, if this is repeated.
+    }
+    return;
+}
+
+static void SubBytes(uint8_t* State)
+{
+    // This will use an SBox.
+    // These SBox values in the array will be initialized.
+    return;
+}
+
+static void InvSubBytes(uint8_t* State)
+{
+
+    return;
+}
+
+static void ShiftRows(uint8_t* State)
+{
+
+    return;
+}
+
+static void InvShiftRows(uint8_t* State)
+{
+
+    return;
+}
+
+static void MixColumns(uint8_t* State)
+{
+
+    return;
+}
+
+static void InvMixColumns(uint8_t* State)
+{
+
+    return;
+}
+
+static void InitSbox()
+{
+    // Reorder these functions (attempt to place all in AES.h)
+    return;
+}
+
+// GAdd is a simple XOR
+// GMul must be implemented with XTimes
