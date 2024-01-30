@@ -4,8 +4,10 @@
 int main()
 {
     printf("\n");
+    uint8_t Data[] = {1, 2, 3};
 
-    printf("Hello, World!\n");
+    AES(Data, Data);
+    printf("Data: %d\n", Data[0]);
 
     return 0;
 }
