@@ -4,34 +4,47 @@
 // We need an API function to take data of X size, and convert it to encrypted data of X size.
 // The sizes match, so they can be the same variable.
 // So, we will make the function change the X size array itself.
-//! NOTE, ALL CURRENT STEPS ARE FOR 128-BIT. DOUBLE CHECK AND CORRECT FOR 256-BIT.
 //* Any "pre-generated" arrays will have initializer functions to fill them.
 
-void AESEnc(uint8_t* Data, const uint8_t* Key)
+void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 {
+    //! NOTE, ALL CURRENT STEPS ARE FOR 128-BIT. DOUBLE CHECK AND CORRECT FOR 256-BIT.
     // Data will be modified. Key wont
     // Key will be 256-bit cause why not?
     // Maybe make all 3? 
     // 256 first tho, keep in mind portability for functions
 
     //? Fill state sideways
+    uint8_t State[16] = 
+    {
+        Plaintext[0], Plaintext[4], Plaintext[8], Plaintext[12],
+        Plaintext[1], Plaintext[5], Plaintext[9], Plaintext[13],  
+        Plaintext[2], Plaintext[6], Plaintext[10], Plaintext[14],  
+        Plaintext[3], Plaintext[7], Plaintext[11], Plaintext[15]
+    };
 
     //? Key expansion (check for differences in 128-bit to 256-bit)
+    //* KeyExpand function
 
     //? Xor first Key
+    //* XorKey function
 
     //? Rounds
+    //* SubBytes function
+    //* ShiftRows function
+    //* MixColumns function
 
     //? Final round without Mix Columns
 
     //? Deallocate KeyExpansion (or make it static/set size)
 
     //? Fill Data (reverse) sideways
-
+    //* Reverse State init, but use regular Plaintext[i] = State[j] declaration, 16 of em.
+    
     return;
 }
 
-void AESDec(uint8_t* Data, const uint8_t* Key)
+void AESDec(uint8_t* Ciphertext, const uint8_t* Key)
 {
     //? Fill state sideways
 

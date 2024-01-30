@@ -4,10 +4,10 @@
 int main()
 {
     printf("\n");
-    uint8_t Data[] = {1, 2, 3};
+    uint8_t Data[16] = {1, 2, 3};
 
-    AES(Data, Data);
-    printf("Data: %d\n", Data[0]);
+    AESEnc(Data, Data);
+    printf("Data: %d\n", Data[7]);
 
     return 0;
 }
