@@ -25,6 +25,9 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
         Plaintext[3], Plaintext[7], Plaintext[11], Plaintext[15]
     };
 
+    //! Multiplication playground
+    printf("GMUL: %X", GMul(0x58, 1));
+
     //? Key expansion (check for differences in 128-bit to 256-bit)
     //* KeyExpand function
 
@@ -165,3 +168,23 @@ static void InitSbox()
 
 // GAdd is a simple XOR
 // GMul must be implemented with XTimes
+
+static inline uint8_t XTimes(uint8_t X)
+{
+    return (X << 1) ^ ((X>>7) * (0b00011011));
+}
+
+static inline uint8_t GMul(uint8_t X, uint8_t Y)
+{
+    return (((Y & 1) * X) ^
+    ((Y>>1 & 1) * XTimes(X)) ^
+    ((Y>>2 & 1) * XTimes(XTimes(X))) ^
+    ((Y>>3 & 1) * XTimes(XTimes(XTimes(X)))) ^
+    ((Y>>4 & 1) * XTimes(XTimes(XTimes(XTimes(X))))));
+}
+
+static inline uint8_t GInv(uint8_t X)
+{
+    // Inverse or swap with InitSBox
+    return X;
+}
