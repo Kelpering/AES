@@ -1,8 +1,13 @@
 #include "../include/AES.h"
 #include <stdio.h>
-#define XTimes(X) ((X<<1) ^ ((X>>7) * (0b11011)))
 
-#define GMul(X,Y) (((Y&1) * X ) ^ ((Y>>1&1) * XTimes(X)) ^ ((Y>>2&1) * XTimes(XTimes(X))) ^ ((Y>>3 & 1) * XTimes(XTimes(XTimes(X)))) ^ ((Y>>4&1) * XTimes(XTimes(XTimes(XTimes(X))))))
+// These might be wrong. If multiplication is off, check these first.
+#define XTimes(X)   (uint8_t) ((X<<1) ^ (((X>>7) & 1) * (0x1B)))
+#define GMul(X,Y)   (((Y&1) * X ) ^ \
+                    ((Y>>1&1) * XTimes(X)) ^ \
+                    ((Y>>2&1) * XTimes(XTimes(X))) ^ \
+                    ((Y>>3&1) * XTimes(XTimes(XTimes(X)))) ^ \
+                    ((Y>>4&1) * XTimes(XTimes(XTimes(XTimes(X))))))
 
 
 // We need an API function to take data of X size, and convert it to encrypted data of X size.
@@ -30,7 +35,7 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
     };
 
     //! Multiplication playground
-    printf("GMUL: __%X__\n", GMul(0x58, 3));
+    printf("GMUL: __%X__\n", GMul(0x57, 0x13));
 
     //? Key expansion (check for differences in 128-bit to 256-bit)
     //* KeyExpand function
