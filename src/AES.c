@@ -1,5 +1,9 @@
 #include "../include/AES.h"
 #include <stdio.h>
+#define XTimes(X) ((X<<1) ^ ((X>>7) * (0b11011)))
+
+#define GMul(X,Y) (((Y&1) * X ) ^ ((Y>>1&1) * XTimes(X)) ^ ((Y>>2&1) * XTimes(XTimes(X))) ^ ((Y>>3 & 1) * XTimes(XTimes(XTimes(X)))) ^ ((Y>>4&1) * XTimes(XTimes(XTimes(XTimes(X))))))
+
 
 // We need an API function to take data of X size, and convert it to encrypted data of X size.
 // The sizes match, so they can be the same variable.
@@ -26,7 +30,7 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
     };
 
     //! Multiplication playground
-    printf("GMUL: %X", GMul(0x58, 1));
+    printf("GMUL: __%X__\n", GMul(0x58, 3));
 
     //? Key expansion (check for differences in 128-bit to 256-bit)
     //* KeyExpand function
@@ -168,12 +172,15 @@ static void InitSbox()
 
 // GAdd is a simple XOR
 // GMul must be implemented with XTimes
-
+/*
 static inline uint8_t XTimes(uint8_t X)
 {
     return (X << 1) ^ ((X>>7) * (0b00011011));
 }
+*/
 
+
+/*
 static inline uint8_t GMul(uint8_t X, uint8_t Y)
 {
     return (((Y & 1) * X) ^
@@ -188,3 +195,4 @@ static inline uint8_t GInv(uint8_t X)
     // Inverse or swap with InitSBox
     return X;
 }
+*/
