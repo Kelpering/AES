@@ -2,8 +2,8 @@
 #include <stdio.h>
 
 // These might be wrong. If multiplication is off, check these first.
-#define XTimes(X)   (uint8_t) ((X<<1) ^ (((X>>7) & 1) * (0x1B)))
-#define GMul(X,Y)   (((Y&1) * X ) ^ \
+#define XTimes(X)   ((uint8_t) ((X<<1) ^ (((X>>7) & 1) * (0x1B))))
+#define GMul(X,Y)   (((Y&1) * X) ^ \
                     ((Y>>1&1) * XTimes(X)) ^ \
                     ((Y>>2&1) * XTimes(XTimes(X))) ^ \
                     ((Y>>3&1) * XTimes(XTimes(XTimes(X)))) ^ \
@@ -35,7 +35,7 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
     };
 
     //! Multiplication playground
-    printf("GMUL: __%X__\n", GMul(0x57, 0x13));
+    printf("GMUL: __%X__\n", GMul(0x57, 0x20));
 
     //? Key expansion (check for differences in 128-bit to 256-bit)
     //* KeyExpand function
@@ -194,10 +194,21 @@ static inline uint8_t GMul(uint8_t X, uint8_t Y)
     ((Y>>3 & 1) * XTimes(XTimes(XTimes(X)))) ^
     ((Y>>4 & 1) * XTimes(XTimes(XTimes(XTimes(X))))));
 }
-
-static inline uint8_t GInv(uint8_t X)
-{
-    // Inverse or swap with InitSBox
-    return X;
-}
 */
+
+static uint8_t GInv(uint8_t a)
+{
+
+    //! Works, figure out how later
+    uint8_t b = GMul(a,a);
+    uint8_t c = GMul(a,b);
+            b = GMul(c,c);
+            b = GMul(b,b);
+            c = GMul(b,c);
+            b = GMul(b,b);
+            b = GMul(b,b);
+            b = GMul(b,c);
+            b = GMul(b,b);
+            b = GMul(a,b);
+    return GMul(b,b);
+}
