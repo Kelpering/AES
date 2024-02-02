@@ -25,10 +25,6 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
         Plaintext[3], Plaintext[7], Plaintext[11], Plaintext[15]
     };
 
-    //! Multiplication playground
-    printf("GMUL: __%X__\n", GMul(0x57, 0xBF));
-    printf("GINV: __%X__\n", GInv(0x57));
-
     //? Key expansion (check for differences in 128-bit to 256-bit)
     //* KeyExpand function
 
@@ -108,10 +104,30 @@ uint32_t AESKeyGen()
 // Eventually, we will need encryption methods (ECB, CBC), which will go into another file (along with more cryptography such as md5)
 // I am NOT making AES sidechannel secure, not happening.
 
-static void KeyExpansion(uint8_t* Key)
+static uint8_t* KeyExpansion256(uint8_t* Key)
+{
+    printf("%X", GMul(0x80, 0x02));
+    return NULL;
+}
+
+static uint8_t RotWord(uint8_t Word)
 {
 
-    return;
+    return 0;
+}
+
+static uint8_t SubWord(uint8_t Word)
+{
+
+    return 0;
+}
+
+static uint8_t Rcon(uint8_t X)
+{
+    // This is a temp func, also untested.
+    // If Rcon is small enough, maybe a #define macro would be sufficient
+    // Side note, a refactor of all these code locations is desperately needed.
+    return (X << 1) ^ ((X>>7 & 1) * 0x1B);
 }
 
 static void XorState(uint8_t* State, const uint8_t* Key)
