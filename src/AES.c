@@ -1,15 +1,6 @@
 #include "../include/AES.h"
 #include <stdio.h>
 
-// These might be wrong. If multiplication is off, check these first.
-#define XTimes(X)   ((uint8_t) ((X<<1) ^ (((X>>7) & 1) * (0x1B))))
-#define GMul(X,Y)   (((Y&1) * X) ^ \
-                    ((Y>>1&1) * XTimes(X)) ^ \
-                    ((Y>>2&1) * XTimes(XTimes(X))) ^ \
-                    ((Y>>3&1) * XTimes(XTimes(XTimes(X)))) ^ \
-                    ((Y>>4&1) * XTimes(XTimes(XTimes(XTimes(X))))))
-
-
 // We need an API function to take data of X size, and convert it to encrypted data of X size.
 // The sizes match, so they can be the same variable.
 // So, we will make the function change the X size array itself.
@@ -35,7 +26,8 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
     };
 
     //! Multiplication playground
-    printf("GMUL: __%X__\n", GMul(0x57, 0x20));
+    printf("GMUL: __%X__\n", GMul(0x57, 0xBF));
+    printf("GINV: __%X__\n", GInv(0x57));
 
     //? Key expansion (check for differences in 128-bit to 256-bit)
     //* KeyExpand function
@@ -175,26 +167,28 @@ static void InitSbox()
     return;
 }
 
-// GAdd is a simple XOR
-// GMul must be implemented with XTimes
-/*
-static inline uint8_t XTimes(uint8_t X)
+static uint8_t GMul(uint8_t x, uint8_t y)
 {
-    return (X << 1) ^ ((X>>7) * (0b00011011));
-}
-*/
+	uint8_t p = 0;
+	uint8_t carry = 0;
+    for (int i = 0; i < 8; i++)
+	{
+		// If the first bit of Y is a 1, add x to p
+		if (y&1)
+            p ^= x;
+        // Set carry to 1 if x's 7th bit is 1
+        carry = x & 0x80;
+        
+        // shift both to the next bits to check
+        x <<= 1;
+        y >>= 1;
 
-
-/*
-static inline uint8_t GMul(uint8_t X, uint8_t Y)
-{
-    return (((Y & 1) * X) ^
-    ((Y>>1 & 1) * XTimes(X)) ^
-    ((Y>>2 & 1) * XTimes(XTimes(X))) ^
-    ((Y>>3 & 1) * XTimes(XTimes(XTimes(X)))) ^
-    ((Y>>4 & 1) * XTimes(XTimes(XTimes(XTimes(X))))));
+        // If carry was set, add carry byte (0x1B)
+        if (carry)
+            x ^= 0x1B;
+	}
+    return p;
 }
-*/
 
 static uint8_t GInv(uint8_t a)
 {
