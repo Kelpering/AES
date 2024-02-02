@@ -6,6 +6,8 @@
 // So, we will make the function change the X size array itself.
 //* Any "pre-generated" arrays will have initializer functions to fill them.
 
+#define ROTL8(x, shift) ((x<<shift) | (x >> (8 - shift)))
+
 static uint8_t SBox[256];
 
 void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
@@ -24,6 +26,10 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
         Plaintext[2], Plaintext[6], Plaintext[10], Plaintext[14],  
         Plaintext[3], Plaintext[7], Plaintext[11], Plaintext[15]
     };
+
+    //! Playground
+    InitSbox();
+    // KeyExpansion256(Key);
 
     //? Key expansion (check for differences in 128-bit to 256-bit)
     //* KeyExpand function
@@ -82,14 +88,8 @@ void AESDec(uint8_t* Ciphertext, const uint8_t* Key)
     return;
 }
 
-uint32_t AESKeyGen()
+uint32_t AESKeyGen256()
 {
-    union Key
-    {
-        uint32_t Key256;
-        // uint24_t (which does not exist)
-        uint16_t Key128;
-    };
     // Seed data?
     // Enum for bit size?
     
@@ -106,19 +106,27 @@ uint32_t AESKeyGen()
 
 static uint8_t* KeyExpansion256(uint8_t* Key)
 {
-    printf("%X", GMul(0x80, 0x02));
+    // Malloc a 256-bit key EXPANDED (so not 256 bits)
+
     return NULL;
 }
 
-static uint8_t RotWord(uint8_t Word)
+static void RotWord(uint8_t* Word)
 {
-
-    return 0;
+    // uint8_t Temp = Word[0];
+    // Word[0] = Word[1];
+    // Word[1] = Word[2];
+    // Word[2] = Word[3];
+    // Word[3] = Temp;
+    return;
 }
 
-static uint8_t SubWord(uint8_t Word)
+static void SubWord(uint8_t* Word)
 {
-
+    // Word[0] = SBox[Word[0]];
+    // Word[1] = SBox[Word[1]];
+    // Word[2] = SBox[Word[2]];
+    // Word[3] = SBox[Word[3]];
     return 0;
 }
 
@@ -142,8 +150,9 @@ static void XorState(uint8_t* State, const uint8_t* Key)
 
 static void SubBytes(uint8_t* State)
 {
-    // This will use an SBox.
-    // These SBox values in the array will be initialized.
+    //! Double check later
+    for (int i = 0; i < 16; i++)
+        State[i] = SBox[State[i]];
     return;
 }
 
@@ -177,9 +186,26 @@ static void InvMixColumns(uint8_t* State)
     return;
 }
 
+static uint8_t SBoxFunc(uint8_t Byte)
+{
+    //* Inverse of byte in GF(2^8)
+    uint8_t Inv = GInv(Byte);
+
+    //! Double check how this works
+    Byte = Inv ^ \
+    ROTL8(Inv, 1) ^ \
+    ROTL8(Inv, 2) ^ \
+    ROTL8(Inv, 3) ^ \
+    ROTL8(Inv, 4) ^ \
+    0x63;
+    
+    return Byte;
+}
+
 static void InitSbox()
 {
-    // Reorder these functions (attempt to place all in AES.h)
+    for (int i = 0; i < 256; i++)
+        SBox[i] = SBoxFunc(i);
     return;
 }
 
@@ -189,17 +215,17 @@ static uint8_t GMul(uint8_t x, uint8_t y)
 	uint8_t carry = 0;
     for (int i = 0; i < 8; i++)
 	{
-		// If the first bit of Y is a 1, add x to p
+		//* If the first bit of Y is a 1, add x to p
 		if (y&1)
             p ^= x;
-        // Set carry to 1 if x's 7th bit is 1
+
+        //* Set carry to 1 if x's 7th bit is 1
         carry = x & 0x80;
         
-        // shift both to the next bits to check
         x <<= 1;
         y >>= 1;
 
-        // If carry was set, add carry byte (0x1B)
+        //* If carry was set, add carry byte (0x1B)
         if (carry)
             x ^= 0x1B;
 	}
@@ -208,8 +234,7 @@ static uint8_t GMul(uint8_t x, uint8_t y)
 
 static uint8_t GInv(uint8_t a)
 {
-
-    //! Works, figure out how later
+    //* Uses combinations of variables to multiply a by itself exactly 254 times.
     uint8_t b = GMul(a,a);
     uint8_t c = GMul(a,b);
             b = GMul(c,c);
