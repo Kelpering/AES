@@ -9,6 +9,8 @@
 #define ROTL8(x, shift) ((x<<shift) | (x >> (8 - shift)))
 
 static uint8_t SBox[256];
+static void ShiftRows(uint8_t* State);
+static void InvShiftRows(uint8_t* State);
 
 void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 {
@@ -29,6 +31,8 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 
     //! Playground
     InitSbox();
+    ShiftRows(Plaintext);
+    InvShiftRows(Plaintext);
     // KeyExpansion256(Key);
 
     //? Key expansion (check for differences in 128-bit to 256-bit)
@@ -48,7 +52,7 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 
     //? Fill Data (reverse) sideways
     //* Reverse State init, but use regular Plaintext[i] = State[j] declaration, 16 of em.
-
+/*
     Plaintext[0] = State[0];
     Plaintext[1] = State[4];
     Plaintext[2] = State[8];
@@ -65,7 +69,7 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
     Plaintext[13] = State[7];
     Plaintext[14] = State[11];
     Plaintext[15] = State[15];
-    
+  */
     return;
 }
 
@@ -164,13 +168,23 @@ static void InvSubBytes(uint8_t* State)
 
 static void ShiftRows(uint8_t* State)
 {
-
+    uint8_t Temp[16];
+    for (int i = 0; i < 16; i++)
+        Temp[i] = State[i];
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            State[i*4+j] = Temp[i*4+(j+i)%4];
     return;
 }
 
 static void InvShiftRows(uint8_t* State)
 {
-
+    uint8_t Temp[16];
+    for (int i = 0; i < 16; i++)
+        Temp[i] = State[i];
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            State[i*4+(j+i)%4] = Temp[i*4+j];
     return;
 }
 

@@ -12,8 +12,11 @@ int main()
     PrintArr(Data);
     printf("Key:  ");
     PrintArr(Key);
+    
 
+    PrintBlock(Data);
     AESEnc(Data, Key);
+    PrintBlock(Data);
 
     return 0;
 }
