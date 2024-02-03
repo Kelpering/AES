@@ -244,6 +244,19 @@ static uint8_t SBoxFunc(uint8_t Byte)
     return Byte;
 }
 
+static uint8_t InvSBoxFunc(uint8_t)
+{
+    //* byte = (byte ROTL 1) ^ (Byte ROTL 3) ^ (Byte ROTL 6) ^ (0x05)
+    byte = 
+    ROTL8(byte, 1) ^ 
+    ROTL8(byte, 3) ^ 
+    ROTL8(byte, 6) ^ 
+    0x05;
+
+    //* Returns the multiplicative inverse of the result within the Galois Field GF(2^8)
+    return GInv(byte);
+}
+
 void InitSbox()
 {
     for (int i = 0; i < 256; i++)
