@@ -7,10 +7,13 @@
 // So, we will make the function change the X size array itself.
 //* Any "pre-generated" arrays will have initializer functions to fill them.
 
+static uint8_t InvSBoxFunc(uint8_t byte);
+
 void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 {
     //! This is unnecessary and inefficient
     InitSbox();
+    printf("INV: %X", InvSBoxFunc(SBoxFunc(0x44)));
 
     //? Fill state sideways
     uint8_t State[16] = 
@@ -244,15 +247,17 @@ static uint8_t SBoxFunc(uint8_t Byte)
     return Byte;
 }
 
-static uint8_t InvSBoxFunc(uint8_t)
+static uint8_t InvSBoxFunc(uint8_t byte)
 {
-    //* byte = (byte ROTL 1) ^ (Byte ROTL 3) ^ (Byte ROTL 6) ^ (0x05)
+
+    byte = ROTL8(byte, 1) ^ ROTL8(byte, 3) ^ ROTL8(byte, 6) ^ 0x05;
+/* byte = (byte ROTL 1) ^ (Byte ROTL 3) ^ (Byte ROTL 6) ^ (0x05)
     byte = 
     ROTL8(byte, 1) ^ 
     ROTL8(byte, 3) ^ 
     ROTL8(byte, 6) ^ 
     0x05;
-
+*/
     //* Returns the multiplicative inverse of the result within the Galois Field GF(2^8)
     return GInv(byte);
 }
@@ -261,6 +266,13 @@ void InitSbox()
 {
     for (int i = 0; i < 256; i++)
         SBox[i] = SBoxFunc(i);
+    return;
+}
+
+void InitInvSBox()
+{
+    for (int i = 0; i < 256; i++)
+        InvSBox[i] = InvSBoxFunc(i);
     return;
 }
 

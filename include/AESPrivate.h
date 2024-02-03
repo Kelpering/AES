@@ -5,6 +5,7 @@
 #define ROTL8(x, shift) ((x<<shift) | (x >> (8 - shift)))
 
 static uint8_t SBox[256];
+static uint8_t InvSBox[256];
 static void ShiftRows(uint8_t* State);
 static void InvShiftRows(uint8_t* State);
 static void SubBytes(uint8_t* State);
