@@ -13,6 +13,7 @@ int main()
     printf("\n");
     PrintBlock(Data2);
     
+    InitSbox();
     AESEnc(Data2, Key);
 
     PrintArr(Data2);

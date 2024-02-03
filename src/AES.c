@@ -244,7 +244,7 @@ static uint8_t SBoxFunc(uint8_t Byte)
     return Byte;
 }
 
-static void InitSbox()
+void InitSbox()
 {
     for (int i = 0; i < 256; i++)
         SBox[i] = SBoxFunc(i);
