@@ -6,15 +6,3 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key);
 
 void AESDec(uint8_t* Ciphertext, const uint8_t* Key);
 
-static uint8_t GMul(uint8_t x, uint8_t y);
-
-static uint8_t GInv(uint8_t a);
-
-static uint8_t* KeyExpansion256(uint8_t* Key);
-
-static uint8_t SBoxFunc(uint8_t B);
-
-//! This must be called before the FIRST AES
-//! it could theoretically never have to be ran again.
-//! "instance" of an AES?
-static void InitSbox();

@@ -1,4 +1,5 @@
 #include "../include/AES.h"
+#include "../include/AESPrivate.h"
 #include <stdio.h>
 
 // We need an API function to take data of X size, and convert it to encrypted data of X size.
@@ -6,19 +7,10 @@
 // So, we will make the function change the X size array itself.
 //* Any "pre-generated" arrays will have initializer functions to fill them.
 
-#define ROTL8(x, shift) ((x<<shift) | (x >> (8 - shift)))
-
-static uint8_t SBox[256];
-static void ShiftRows(uint8_t* State);
-static void InvShiftRows(uint8_t* State);
-
 void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 {
-    //! NOTE, ALL CURRENT STEPS ARE FOR 128-BIT. DOUBLE CHECK AND CORRECT FOR 256-BIT.
-    // Data will be modified. Key wont
-    // Key will be 256-bit cause why not?
-    // Maybe make all 3? 
-    // 256 first tho, keep in mind portability for functions
+    //! This is unnecessary and inefficient
+    InitSbox();
 
     //? Fill state sideways
     uint8_t State[16] = 
@@ -29,30 +21,33 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
         Plaintext[3], Plaintext[7], Plaintext[11], Plaintext[15]
     };
 
-    //! Playground
-    InitSbox();
-    ShiftRows(Plaintext);
-    InvShiftRows(Plaintext);
-    // KeyExpansion256(Key);
-
-    //? Key expansion (check for differences in 128-bit to 256-bit)
-    //* KeyExpand function
+    //? Key expansion
+    uint32_t* EKey = KeyExpansion256(Key);
 
     //? Xor first Key
-    //* XorKey function
+    AddRoundKey(State, (EKey + 0));
 
     //? Rounds
-    //* SubBytes function
-    //* ShiftRows function
-    //* MixColumns function
+    for (int i = 1; i < 14; i++)
+    {
+        SubBytes(State);
+        ShiftRows(State);
+        MixColumns(State);
+        AddRoundKey(State, (EKey+(i*4)));
+    }
 
     //? Final round without Mix Columns
+    SubBytes(State);
+    ShiftRows(State);
+    AddRoundKey(State, (EKey+(14*4)));
 
-    //? Deallocate KeyExpansion (or make it static/set size)
+
+    //? Clear and de-allocate Expanded Key
+    for (int i = 0; i < 60; i++)
+        EKey[i] = 0;
+    free(EKey);
 
     //? Fill Data (reverse) sideways
-    //* Reverse State init, but use regular Plaintext[i] = State[j] declaration, 16 of em.
-/*
     Plaintext[0] = State[0];
     Plaintext[1] = State[4];
     Plaintext[2] = State[8];
@@ -69,7 +64,7 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
     Plaintext[13] = State[7];
     Plaintext[14] = State[11];
     Plaintext[15] = State[15];
-  */
+
     return;
 }
 
@@ -94,11 +89,8 @@ void AESDec(uint8_t* Ciphertext, const uint8_t* Key)
 
 uint32_t AESKeyGen256()
 {
-    // Seed data?
-    // Enum for bit size?
-    
-    // Switch size or basic math calc w/ enum
-    // Generate key of Enum size (128, 196, 256)
+    // Seed data
+    // Generate key of size 256-bit (32 bytes)
 
     // Return union? 
     return 0;
@@ -108,47 +100,69 @@ uint32_t AESKeyGen256()
 // Eventually, we will need encryption methods (ECB, CBC), which will go into another file (along with more cryptography such as md5)
 // I am NOT making AES sidechannel secure, not happening.
 
-static uint8_t* KeyExpansion256(uint8_t* Key)
+static uint32_t* KeyExpansion256(uint8_t* Key)
 {
-    // Malloc a 256-bit key EXPANDED (so not 256 bits)
+    //? Malloc a 256-bit expanded key (constant size).
+    uint32_t* EKey = malloc(240);
 
-    return NULL;
+    //? First 8 words are the cipherkey, set as bytes.
+    for (int i = 0; i < 8*4; i++)
+        ((uint8_t*) EKey)[i] = Key[i];
+    
+    //? Generate 60 words (15 keys), first 4 set.
+    //* RCON is the round constant, set to initial value of 1.
+    uint8_t RCON = 1;
+    for (int i = 8; i < (15*4); i++)
+    {
+        //* Prev is the last word generated.
+        //* Prev is a seperate memory pointer from w[], to allow for memory manipulation without affecting previously generated keys.
+        uint32_t Prev = *(EKey + i - 1);
+
+        //? Transformes specific bytes in w[i].
+        if (i % 8 == 0)
+        {
+            RotWord(&Prev);
+            SubWord(&Prev);
+            //* RCON is XOR'd directly because of Prev's endianness
+            Prev ^= RCON;
+            RCON = GMul(RCON, 0x02);
+        }
+        else if ((i+4)%8 == 0)
+        {
+            SubWord(&Prev);
+        }
+
+        EKey[i] = EKey[i-8] ^ Prev;
+    }
+
+    //! Expanded key must be freed at the end of the AES run.
+    return EKey;
 }
 
 static void RotWord(uint8_t* Word)
 {
-    // uint8_t Temp = Word[0];
-    // Word[0] = Word[1];
-    // Word[1] = Word[2];
-    // Word[2] = Word[3];
-    // Word[3] = Temp;
+    uint8_t Temp = Word[0];
+    Word[0] = Word[1];
+    Word[1] = Word[2];
+    Word[2] = Word[3];
+    Word[3] = Temp;
     return;
 }
 
 static void SubWord(uint8_t* Word)
 {
-    // Word[0] = SBox[Word[0]];
-    // Word[1] = SBox[Word[1]];
-    // Word[2] = SBox[Word[2]];
-    // Word[3] = SBox[Word[3]];
+    Word[0] = SBox[Word[0]];
+    Word[1] = SBox[Word[1]];
+    Word[2] = SBox[Word[2]];
+    Word[3] = SBox[Word[3]];
     return 0;
 }
 
-static uint8_t Rcon(uint8_t X)
+static void AddRoundKey(uint8_t* State, const uint8_t* EKey)
 {
-    // This is a temp func, also untested.
-    // If Rcon is small enough, maybe a #define macro would be sufficient
-    // Side note, a refactor of all these code locations is desperately needed.
-    return (X << 1) ^ ((X>>7 & 1) * 0x1B);
-}
-
-static void XorState(uint8_t* State, const uint8_t* Key)
-{
-    for (int i = 0; i < 16; i++)
-    {
-        // The key is seen sideways for some reason
-        // Might be useful in the future for KeyExpand, if this is repeated.
-    }
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            State[j*4+i] ^= EKey[i*4+j];
     return;
 }
 
@@ -171,6 +185,7 @@ static void ShiftRows(uint8_t* State)
     uint8_t Temp[16];
     for (int i = 0; i < 16; i++)
         Temp[i] = State[i];
+
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
             State[i*4+j] = Temp[i*4+(j+i)%4];
@@ -182,6 +197,7 @@ static void InvShiftRows(uint8_t* State)
     uint8_t Temp[16];
     for (int i = 0; i < 16; i++)
         Temp[i] = State[i];
+
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
             State[i*4+(j+i)%4] = Temp[i*4+j];
@@ -190,7 +206,19 @@ static void InvShiftRows(uint8_t* State)
 
 static void MixColumns(uint8_t* State)
 {
+    // Stores State while the column is being altered.
+    uint8_t Temp[4];
 
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+            Temp[j] = State[j*4+i];
+
+        State[0*4+i] = GMul(Temp[0], 0x02) ^ GMul(Temp[1], 0x03) ^ Temp[2] ^ Temp[3];
+        State[1*4+i] = Temp[0] ^ GMul(Temp[1], 0x02) ^ GMul(Temp[2], 0x03) ^ Temp[3];
+        State[2*4+i] = Temp[0] ^ Temp[1] ^ GMul(Temp[2], 0x02) ^ GMul(Temp[3], 0x03);
+        State[3*4+i] = GMul(Temp[0], 0x03) ^ Temp[1] ^ Temp[2] ^ GMul(Temp[3], 0x02);
+    }
     return;
 }
 
