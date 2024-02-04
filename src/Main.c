@@ -19,6 +19,9 @@ int main()
     PrintArr(Data2);
     printf("\n");
     PrintBlock(Data2);
+    
+    AesDec(Data2, Key);
+    PrintBlock(Data2);
 
     return 0;
 }

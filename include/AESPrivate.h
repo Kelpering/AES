@@ -18,3 +18,6 @@ static uint8_t GInv(uint8_t a);
 static uint32_t* KeyExpansion256(uint8_t* Key);
 static uint8_t SBoxFunc(uint8_t B);
 static uint8_t InvSBoxFunc(uint8_t B);
+static void InvMixColumns(uint8_t* State);
+static void InvSubBytes(uint8_t* State);
+

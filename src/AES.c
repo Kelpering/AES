@@ -72,7 +72,7 @@ void AESDec(uint8_t* Ciphertext, const uint8_t* Key)
     //! This is inefficient
     InitInvSBox();
     //? Fill state sideways
-    uint8_t State = 
+    uint8_t State[] = 
     {
         Ciphertext[0], Ciphertext[4], Ciphertext[8], Ciphertext[12],
         Ciphertext[1], Ciphertext[5], Ciphertext[9], Ciphertext[13],
@@ -80,14 +80,28 @@ void AESDec(uint8_t* Ciphertext, const uint8_t* Key)
         Ciphertext[3], Ciphertext[7], Ciphertext[11], Ciphertext[15]
     };
     //? Key expansion (same)
+    uint32_t EKey = KeyExpansion256(Key);
 
     //? Xor (last?) key
+    AddRoundKey(State, (EKey + 14*4));
 
     //? Rounds (seemingly in reverse, both in i and functions)
-
+    for (int i = 14; i > 0; i--)
+    {
+        InvShiftRows(State);
+        InvSubBytes(State);
+        AddRoundKey(State, EKey+(i*4));
+        InvMixColumns(State);
+    }
+    InvShiftRows(State);
+    InvSubBytes(State);
+    AddRoundKey(State, EKey + 0);
+    
     //? Last round without mix columns, same reverse
 
     //? Deallocate KeyExpansion (or make it static/set size)
+    free(EKey);
+
 
     //? Fill Data (reverse) sideways
     Ciphertext[0] = State[0];
@@ -178,7 +192,7 @@ static void SubWord(uint8_t* Word)
     Word[1] = SBox[Word[1]];
     Word[2] = SBox[Word[2]];
     Word[3] = SBox[Word[3]];
-    return 0;
+    return;
 }
 
 static void AddRoundKey(uint8_t* State, const uint8_t* EKey)
@@ -199,7 +213,8 @@ static void SubBytes(uint8_t* State)
 
 static void InvSubBytes(uint8_t* State)
 {
-
+    for (int i = 0; i < 16; i++)
+        State[i] = InvSBox[State[i]];
     return;
 }
 
@@ -257,12 +272,7 @@ static uint8_t SBoxFunc(uint8_t Byte)
     uint8_t Inv = GInv(Byte);
 
     //! Double check how this works
-    Byte = Inv ^ \
-    ROTL8(Inv, 1) ^ \
-    ROTL8(Inv, 2) ^ \
-    ROTL8(Inv, 3) ^ \
-    ROTL8(Inv, 4) ^ \
-    0x63;
+    Byte = Inv ^ ROTL8(Inv, 1) ^ ROTL8(Inv, 2) ^ ROTL8(Inv, 3) ^ ROTL8(Inv, 4) ^ 0x63;
     
     return Byte;
 }
@@ -271,14 +281,6 @@ static uint8_t InvSBoxFunc(uint8_t byte)
 {
 
     byte = ROTL8(byte, 1) ^ ROTL8(byte, 3) ^ ROTL8(byte, 6) ^ 0x05;
-/* byte = (byte ROTL 1) ^ (Byte ROTL 3) ^ (Byte ROTL 6) ^ (0x05)
-    byte = 
-    ROTL8(byte, 1) ^ 
-    ROTL8(byte, 3) ^ 
-    ROTL8(byte, 6) ^ 
-    0x05;
-*/
-    //* Returns the multiplicative inverse of the result within the Galois Field GF(2^8)
     return GInv(byte);
 }
 
