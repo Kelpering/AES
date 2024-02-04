@@ -5,6 +5,10 @@
 
 void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 {
+    //? If SBox has never been run before, initialize.
+    if (SBox[0] != 0x63)
+        InitSBox();
+
     //? Fill state sideways
     uint8_t State[16] = 
     {
@@ -62,6 +66,10 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 
 void AESDec(uint8_t* Ciphertext, const uint8_t* Key)
 {
+    //? If InvSBox has never been run before, initialize.
+    if (InvSBox[0] != 0x63)
+        InitInvSBox();
+
     //? Fill state sideways
     uint8_t State[] = 
     {
@@ -125,23 +133,6 @@ uint8_t* AESKeyGen256(uint32_t Seed)
     for (int i = 0; i < 32; i++)
         Key256[i] = rand() % 256;
     return Key256;
-}
-
-
-//? Init functions
-
-void InitSBox()
-{
-    for (int i = 0; i < 256; i++)
-        SBox[i] = SBoxFunc(i);
-    return;
-}
-
-void InitInvSBox()
-{
-    for (int i = 0; i < 256; i++)
-        InvSBox[i] = InvSBoxFunc(i);
-    return;
 }
 
 
@@ -345,4 +336,18 @@ static uint8_t InvSBoxFunc(uint8_t Byte)
 {
     Byte = ROTL8(Byte, 1) ^ ROTL8(Byte, 3) ^ ROTL8(Byte, 6) ^ 0x05;
     return GInv(Byte);
+}
+
+void InitSBox()
+{
+    for (int i = 0; i < 256; i++)
+        SBox[i] = SBoxFunc(i);
+    return;
+}
+
+void InitInvSBox()
+{
+    for (int i = 0; i < 256; i++)
+        InvSBox[i] = InvSBoxFunc(i);
+    return;
 }

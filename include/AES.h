@@ -19,12 +19,3 @@ void AESDec(uint8_t* Ciphertext, const uint8_t* Key);
 /// @returns an allocated, 32-byte, array for use in AES functions. Must be de-allocated to prevent memory leaks.
 /// @warning This function is completely insecure and should only be used for testing.
 uint8_t* AESKeyGen256(uint32_t Seed);
-
-
-//? Init functions
-
-/// @brief Initializes the internal "SBox" of AESEnc to allow for proper encryption, only called once.
-void InitSBox();
-
-/// @brief Initializes the internal "InvSBox" of AESDec to allow for proper decryption, only called once.
-void InitInvSBox();
