@@ -17,3 +17,4 @@ static uint8_t GMul(uint8_t x, uint8_t y);
 static uint8_t GInv(uint8_t a);
 static uint32_t* KeyExpansion256(uint8_t* Key);
 static uint8_t SBoxFunc(uint8_t B);
+static uint8_t InvSBoxFunc(uint8_t B);

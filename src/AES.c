@@ -7,14 +7,10 @@
 // So, we will make the function change the X size array itself.
 //* Any "pre-generated" arrays will have initializer functions to fill them.
 
-static uint8_t InvSBoxFunc(uint8_t byte);
-
 void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 {
     //! This is unnecessary and inefficient
     InitSbox();
-    printf("INV: %X", InvSBoxFunc(SBoxFunc(0x44)));
-
     //? Fill state sideways
     uint8_t State[16] = 
     {
@@ -73,8 +69,16 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 
 void AESDec(uint8_t* Ciphertext, const uint8_t* Key)
 {
+    //! This is inefficient
+    InitInvSBox();
     //? Fill state sideways
-
+    uint8_t State = 
+    {
+        Ciphertext[0], Ciphertext[4], Ciphertext[8], Ciphertext[12],
+        Ciphertext[1], Ciphertext[5], Ciphertext[9], Ciphertext[13],
+        Ciphertext[2], Ciphertext[6], Ciphertext[10], Ciphertext[14],
+        Ciphertext[3], Ciphertext[7], Ciphertext[11], Ciphertext[15]
+    };
     //? Key expansion (same)
 
     //? Xor (last?) key
@@ -86,6 +90,22 @@ void AESDec(uint8_t* Ciphertext, const uint8_t* Key)
     //? Deallocate KeyExpansion (or make it static/set size)
 
     //? Fill Data (reverse) sideways
+    Ciphertext[0] = State[0];
+    Ciphertext[1] = State[4];
+    Ciphertext[2] = State[8];
+    Ciphertext[3] = State[12];
+    Ciphertext[4] = State[1];
+    Ciphertext[5] = State[5];
+    Ciphertext[6] = State[9];
+    Ciphertext[7] = State[13];
+    Ciphertext[8] = State[2];
+    Ciphertext[9] = State[6];
+    Ciphertext[10] = State[10];
+    Ciphertext[11] = State[14];
+    Ciphertext[12] = State[3];
+    Ciphertext[13] = State[7];
+    Ciphertext[14] = State[11];
+    Ciphertext[15] = State[15];
 
     return;
 }
