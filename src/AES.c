@@ -1,16 +1,10 @@
 #include "../include/AES.h"
 #include "../include/AESPrivate.h"
-#include <stdio.h>
 
-// We need an API function to take data of X size, and convert it to encrypted data of X size.
-// The sizes match, so they can be the same variable.
-// So, we will make the function change the X size array itself.
-//* Any "pre-generated" arrays will have initializer functions to fill them.
+//? Public functions
 
 void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 {
-    //! This is unnecessary and inefficient
-    InitSbox();
     //? Fill state sideways
     uint8_t State[16] = 
     {
@@ -21,10 +15,10 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
     };
 
     //? Key expansion
-    uint32_t* EKey = KeyExpansion256(Key);
+    uint8_t* EKey = KeyExpansion256(Key);
 
     //? Xor first Key
-    AddRoundKey(State, (EKey + 0));
+    AddRoundKey(State, (EKey + 0*4));
 
     //? Rounds
     for (int i = 1; i < 14; i++)
@@ -32,21 +26,20 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
         SubBytes(State);
         ShiftRows(State);
         MixColumns(State);
-        AddRoundKey(State, (EKey+(i*4)));
+        AddRoundKey(State, (EKey+(i*16)));
     }
 
     //? Final round without Mix Columns
     SubBytes(State);
     ShiftRows(State);
-    AddRoundKey(State, (EKey+(14*4)));
-
+    AddRoundKey(State, (EKey+(14*16)));
 
     //? Clear and de-allocate Expanded Key
     for (int i = 0; i < 60; i++)
         EKey[i] = 0;
     free(EKey);
 
-    //? Fill Data (reverse) sideways
+    //? Fill Data sideways
     Plaintext[0] = State[0];
     Plaintext[1] = State[4];
     Plaintext[2] = State[8];
@@ -69,8 +62,6 @@ void AESEnc(uint8_t* Plaintext, const uint8_t* Key)
 
 void AESDec(uint8_t* Ciphertext, const uint8_t* Key)
 {
-    //! This is inefficient
-    InitInvSBox();
     //? Fill state sideways
     uint8_t State[] = 
     {
@@ -79,31 +70,33 @@ void AESDec(uint8_t* Ciphertext, const uint8_t* Key)
         Ciphertext[2], Ciphertext[6], Ciphertext[10], Ciphertext[14],
         Ciphertext[3], Ciphertext[7], Ciphertext[11], Ciphertext[15]
     };
-    //? Key expansion (same)
-    uint32_t EKey = KeyExpansion256(Key);
 
-    //? Xor (last?) key
-    AddRoundKey(State, (EKey + 14*4));
+    //? Key expansion
+    uint8_t* EKey = KeyExpansion256(Key);
 
-    //? Rounds (seemingly in reverse, both in i and functions)
-    for (int i = 14; i > 0; i--)
+    //? Xor last key
+    AddRoundKey(State, (EKey + 14*16));
+
+    //? Rounds in reverse
+    for (int i = 14; i > 1; i--)
     {
         InvShiftRows(State);
         InvSubBytes(State);
-        AddRoundKey(State, EKey+(i*4));
+        AddRoundKey(State, EKey+((i - 1)*16));
         InvMixColumns(State);
     }
+
+    //? Last round without mix columns
     InvShiftRows(State);
     InvSubBytes(State);
     AddRoundKey(State, EKey + 0);
     
-    //? Last round without mix columns, same reverse
-
-    //? Deallocate KeyExpansion (or make it static/set size)
+    //? Clear and de-allocate Expanded Key
+    for (int i = 0; i < 60; i++)
+        EKey[i] = 0;
     free(EKey);
 
-
-    //? Fill Data (reverse) sideways
+    //? Fill Data sideways
     Ciphertext[0] = State[0];
     Ciphertext[1] = State[4];
     Ciphertext[2] = State[8];
@@ -133,11 +126,35 @@ uint32_t AESKeyGen256()
     return 0;
 }
 
-// Static functions will be necessary, along with defines
-// Eventually, we will need encryption methods (ECB, CBC), which will go into another file (along with more cryptography such as md5)
-// I am NOT making AES sidechannel secure, not happening.
 
-static uint32_t* KeyExpansion256(uint8_t* Key)
+//? Init functions
+
+void InitSBox()
+{
+    for (int i = 0; i < 256; i++)
+        SBox[i] = SBoxFunc(i);
+    return;
+}
+
+void InitInvSBox()
+{
+    for (int i = 0; i < 256; i++)
+        InvSBox[i] = InvSBoxFunc(i);
+    return;
+}
+
+
+//? Key functions
+
+static void AddRoundKey(uint8_t* State, const uint8_t* EKey)
+{
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            State[j*4+i] ^= EKey[i*4+j];
+    return;
+}
+
+static uint8_t* KeyExpansion256(const uint8_t* Key)
 {
     //? Malloc a 256-bit expanded key (constant size).
     uint32_t* EKey = malloc(240);
@@ -158,22 +175,22 @@ static uint32_t* KeyExpansion256(uint8_t* Key)
         //? Transformes specific bytes in w[i].
         if (i % 8 == 0)
         {
-            RotWord(&Prev);
-            SubWord(&Prev);
+            RotWord((uint8_t*) &Prev);
+            SubWord((uint8_t*) &Prev);
             //* RCON is XOR'd directly because of Prev's endianness
             Prev ^= RCON;
             RCON = GMul(RCON, 0x02);
         }
         else if ((i+4)%8 == 0)
         {
-            SubWord(&Prev);
+            SubWord((uint8_t*) &Prev);
         }
 
         EKey[i] = EKey[i-8] ^ Prev;
     }
 
     //! Expanded key must be freed at the end of the AES run.
-    return EKey;
+    return (uint8_t*) EKey;
 }
 
 static void RotWord(uint8_t* Word)
@@ -195,28 +212,8 @@ static void SubWord(uint8_t* Word)
     return;
 }
 
-static void AddRoundKey(uint8_t* State, const uint8_t* EKey)
-{
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            State[j*4+i] ^= EKey[i*4+j];
-    return;
-}
 
-static void SubBytes(uint8_t* State)
-{
-    //! Double check later
-    for (int i = 0; i < 16; i++)
-        State[i] = SBox[State[i]];
-    return;
-}
-
-static void InvSubBytes(uint8_t* State)
-{
-    for (int i = 0; i < 16; i++)
-        State[i] = InvSBox[State[i]];
-    return;
-}
+//? Encryption functions
 
 static void ShiftRows(uint8_t* State)
 {
@@ -230,15 +227,10 @@ static void ShiftRows(uint8_t* State)
     return;
 }
 
-static void InvShiftRows(uint8_t* State)
+static void SubBytes(uint8_t* State)
 {
-    uint8_t Temp[16];
     for (int i = 0; i < 16; i++)
-        Temp[i] = State[i];
-
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            State[i*4+(j+i)%4] = Temp[i*4+j];
+        State[i] = SBox[State[i]];
     return;
 }
 
@@ -260,43 +252,48 @@ static void MixColumns(uint8_t* State)
     return;
 }
 
+
+//? Decryption functions
+
+static void InvShiftRows(uint8_t* State)
+{
+    uint8_t Temp[16];
+    for (int i = 0; i < 16; i++)
+        Temp[i] = State[i];
+
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            State[i*4+(j+i)%4] = Temp[i*4+j];
+    return;
+}
+
+static void InvSubBytes(uint8_t* State)
+{
+    for (int i = 0; i < 16; i++)
+        State[i] = InvSBox[State[i]];
+    return;
+}
+
 static void InvMixColumns(uint8_t* State)
 {
+    // Stores State while the column is being altered.
+    uint8_t Temp[4];
 
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+            Temp[j] = State[j*4+i];
+
+        State[0*4+i] = GMul(Temp[0], 0x0e) ^ GMul(Temp[1], 0x0b) ^ GMul(Temp[2], 0x0d) ^ GMul(Temp[3], 0x09);
+        State[1*4+i] = GMul(Temp[0], 0x09) ^ GMul(Temp[1], 0x0e) ^ GMul(Temp[2], 0x0b) ^ GMul(Temp[3], 0x0d);
+        State[2*4+i] = GMul(Temp[0], 0x0d) ^ GMul(Temp[1], 0x09) ^ GMul(Temp[2], 0x0e) ^ GMul(Temp[3], 0x0b);
+        State[3*4+i] = GMul(Temp[0], 0x0b) ^ GMul(Temp[1], 0x0d) ^ GMul(Temp[2], 0x09) ^ GMul(Temp[3], 0x0e);
+    }
     return;
 }
 
-static uint8_t SBoxFunc(uint8_t Byte)
-{
-    //* Inverse of byte in GF(2^8)
-    uint8_t Inv = GInv(Byte);
 
-    //! Double check how this works
-    Byte = Inv ^ ROTL8(Inv, 1) ^ ROTL8(Inv, 2) ^ ROTL8(Inv, 3) ^ ROTL8(Inv, 4) ^ 0x63;
-    
-    return Byte;
-}
-
-static uint8_t InvSBoxFunc(uint8_t byte)
-{
-
-    byte = ROTL8(byte, 1) ^ ROTL8(byte, 3) ^ ROTL8(byte, 6) ^ 0x05;
-    return GInv(byte);
-}
-
-void InitSbox()
-{
-    for (int i = 0; i < 256; i++)
-        SBox[i] = SBoxFunc(i);
-    return;
-}
-
-void InitInvSBox()
-{
-    for (int i = 0; i < 256; i++)
-        InvSBox[i] = InvSBoxFunc(i);
-    return;
-}
+//? Universal functions
 
 static uint8_t GMul(uint8_t x, uint8_t y)
 {
@@ -321,11 +318,11 @@ static uint8_t GMul(uint8_t x, uint8_t y)
     return p;
 }
 
-static uint8_t GInv(uint8_t a)
+static uint8_t GInv(uint8_t Byte)
 {
     //* Uses combinations of variables to multiply a by itself exactly 254 times.
-    uint8_t b = GMul(a,a);
-    uint8_t c = GMul(a,b);
+    uint8_t b = GMul(Byte,Byte);
+    uint8_t c = GMul(Byte,b);
             b = GMul(c,c);
             b = GMul(b,b);
             c = GMul(b,c);
@@ -333,6 +330,18 @@ static uint8_t GInv(uint8_t a)
             b = GMul(b,b);
             b = GMul(b,c);
             b = GMul(b,b);
-            b = GMul(a,b);
+            b = GMul(Byte,b);
     return GMul(b,b);
+}
+
+static uint8_t SBoxFunc(uint8_t Byte)
+{
+    uint8_t Inv = GInv(Byte);
+    return Inv ^ ROTL8(Inv, 1) ^ ROTL8(Inv, 2) ^ ROTL8(Inv, 3) ^ ROTL8(Inv, 4) ^ 0x63;
+}
+
+static uint8_t InvSBoxFunc(uint8_t Byte)
+{
+    Byte = ROTL8(Byte, 1) ^ ROTL8(Byte, 3) ^ ROTL8(Byte, 6) ^ 0x05;
+    return GInv(Byte);
 }
