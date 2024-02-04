@@ -117,13 +117,14 @@ void AESDec(uint8_t* Ciphertext, const uint8_t* Key)
     return;
 }
 
-uint32_t AESKeyGen256()
+uint8_t* AESKeyGen256(uint32_t Seed)
 {
-    // Seed data
-    // Generate key of size 256-bit (32 bytes)
+    srand(Seed);
+    uint8_t* Key256 = malloc(32);
 
-    // Return union? 
-    return 0;
+    for (int i = 0; i < 32; i++)
+        Key256[i] = rand() % 256;
+    return Key256;
 }
 
 

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <time.h>
 #include "../include/AES.h"
 
 void PrintArr(uint8_t* Data);
@@ -25,6 +26,26 @@ int main()
     AESDec(Data, Key);
     printf("Data Decrypted: ");
     PrintArr(Data);
+
+
+    printf("\nNow using a randomly generated key...\n");
+    uint8_t* Key2 = AESKeyGen256(time(NULL));
+
+    //* Print Data
+    printf("Data Plaintext: ");
+    PrintArr(Data);
+
+    //* Encrypt and Print Data
+    AESEnc(Data, Key2);
+    printf("Data Encrypted: ");
+    PrintArr(Data);
+
+    //* Decrypt and Print Data
+    AESDec(Data, Key2);
+    printf("Data Decrypted: ");
+    PrintArr(Data);
+
+    free(Key2);
 
     return 0;
 }
